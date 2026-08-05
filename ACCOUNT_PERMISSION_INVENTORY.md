@@ -184,7 +184,8 @@ Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필
 ## 남은 운영 작업
 
 1. GitHub agent end-to-end Preview
-2. Power Platform DLP 정책에서 Copilot Studio `Skills` connector 허용 또는 환경 예외 승인
+2. Power Platform DLP 정책에서 `Skills with Copilot Studio` connector 허용 또는 환경 예외 승인
+   (절차: [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제))
 3. Standard agent Publish와 end-to-end Preview
 
 ## 최종 판정

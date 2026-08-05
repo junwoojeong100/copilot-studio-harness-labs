@@ -104,5 +104,7 @@ Standard agent의 Tools에도 `Classify Issue - Standard` 연결을 완료했습
 3. Standard agent Publish 및 end-to-end Test
 
 Standard publish의 CloudFlow `NotFound` 오류는 native tool 등록으로 해결됐습니다.
-현재 남은 차단 원인은 `DlpViolationError / BlockedConnector`입니다. Dataverse
+현재 남은 차단 원인은 `DlpViolationError / BlockedConnector`이며,
+차단된 connector는 `Skills with Copilot Studio`입니다. Dataverse
 `System Administrator` 역할만으로 tenant DLP를 변경할 수는 없습니다.
+해제 절차는 [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)을 참고하세요.
