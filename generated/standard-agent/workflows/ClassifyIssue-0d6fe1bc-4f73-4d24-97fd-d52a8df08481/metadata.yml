@@ -1,0 +1,30 @@
+jsonFileName: workflows/ClassifyIssue-0d6fe1bc-4f73-4d24-97fd-d52a8df08481/workflow.json
+workflowId: 0d6fe1bc-4f73-4d24-97fd-d52a8df08481
+name: Classify Issue
+type: 1
+description: Deterministically classifies a GitHub issue and responds to the agent.
+subprocess: false
+category: 5
+mode: 0
+scope: 4
+onDemand: false
+triggerOnCreate: false
+triggerOnDelete: false
+asyncAutodelete: false
+syncWorkflowLogOnFailure: false
+stateCode: 1
+statusCode: 2
+runAs: 1
+isTransacted: true
+introducedVersion: 1.0
+isCustomizable:
+  value: true
+  canBeChanged: true
+  managedPropertyLogicalName: iscustomizableanddeletable
+businessProcessType: 0
+isCustomProcessingStepAllowedForOtherPublishers:
+  value: true
+  canBeChanged: true
+  managedPropertyLogicalName: canbedeleted
+modernFlowType: 1
+primaryEntity: none

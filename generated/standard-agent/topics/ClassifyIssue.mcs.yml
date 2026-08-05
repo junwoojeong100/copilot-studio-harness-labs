@@ -1,0 +1,58 @@
+mcs.metadata:
+  componentName: Classify Issue
+  description: Collects a GitHub issue title and body, then calls a deterministic workflow.
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: Classify Issue
+    includeInOnSelectIntent: false
+    triggerQueries:
+      - classify an issue
+      - classify github issue
+      - triage an issue
+      - issue triage
+      - prioritize an issue
+
+  actions:
+    - kind: Question
+      id: question_issueTitle
+      alwaysPrompt: true
+      variable: Topic.IssueTitle
+      prompt: What is the GitHub issue title?
+      entity: StringPrebuiltEntity
+
+    - kind: Question
+      id: question_issueBody
+      alwaysPrompt: true
+      variable: Topic.IssueBody
+      prompt: What is the GitHub issue body?
+      entity: StringPrebuiltEntity
+
+    - kind: InvokeFlowAction
+      id: invokeFlow_classifyIssue
+      input:
+        binding:
+          issueTitle: =Topic.IssueTitle
+          issueBody: =Topic.IssueBody
+
+      output:
+        binding:
+          category: Topic.Category
+          priority: Topic.Priority
+          summary: Topic.Summary
+          needsHumanReview: Topic.NeedsHumanReview
+
+      flowId: 24623d9d-bb90-f111-b8da-000d3a329d3b
+
+    - kind: SendActivity
+      id: sendResult
+      activity: |-
+        Category: {Topic.Category}
+        Priority: {Topic.Priority}
+        Summary: {Topic.Summary}
+        Human review required: {Topic.NeedsHumanReview}
+
+    - kind: CancelAllDialogs
+      id: cancelAllDialogs

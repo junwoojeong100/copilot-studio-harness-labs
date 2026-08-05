@@ -1,0 +1,120 @@
+schema: copilot-studio-blueprint/v1
+kind: standard-agent-flow
+
+name: Classify GitHub Issue
+description: 이슈 입력을 정책에 따라 분류하고 검증된 구조화 결과를 호출 에이전트에 반환합니다.
+harness: standard
+
+trigger:
+  type: When an agent calls the flow
+  inputs:
+    repository:
+      type: string
+      required: true
+    issueNumber:
+      type: number
+      required: true
+    issueTitle:
+      type: string
+      required: true
+    issueBody:
+      type: string
+      required: false
+      default: ""
+
+nodes:
+  - id: normalize-input
+    type: Compose
+    inputs:
+      repository: "@{trim(triggerBody()?['repository'])}"
+      issueNumber: "@{int(triggerBody()?['issueNumber'])}"
+      issueTitle: "@{trim(triggerBody()?['issueTitle'])}"
+      issueBody: "@{coalesce(triggerBody()?['issueBody'], '')}"
+
+  - id: validate-input
+    type: Condition
+    expression: "@and(not(empty(outputs('normalize-input')?['repository'])), greater(outputs('normalize-input')?['issueNumber'], 0), not(empty(outputs('normalize-input')?['issueTitle'])))"
+    ifFalse:
+      action: Terminate
+      status: Failed
+      message: repository, positive issueNumber, and issueTitle are required.
+
+  - id: classify-issue
+    type: Run a prompt
+    promptFile: classification-prompt.md
+    inputs:
+      repository: "@{outputs('normalize-input')?['repository']}"
+      issueNumber: "@{outputs('normalize-input')?['issueNumber']}"
+      issueTitle: "@{outputs('normalize-input')?['issueTitle']}"
+      issueBody: "@{outputs('normalize-input')?['issueBody']}"
+      labelPolicy: "../../shared/label-policy.yaml 내용을 prompt 상수로 삽입"
+
+  - id: parse-result
+    type: Parse JSON
+    content: "@{outputs('classify-issue')}"
+    schema:
+      type: object
+      required: [type, priority, team, labels, summary, reasoning, confidence, needsHumanReview, followUpQuestions]
+      properties:
+        type:
+          type: string
+          enum: [bug, feature, documentation, question, security]
+        priority:
+          type: string
+          enum: [P0, P1, P2, P3]
+        team:
+          type: string
+          enum: [platform, frontend, backend, data, docs, security, needs-triage]
+        labels:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        reasoning:
+          type: array
+          items:
+            type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        needsHumanReview:
+          type: boolean
+        followUpQuestions:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+
+  - id: enforce-guardrails
+    type: Compose
+    inputs:
+      team: "@{if(less(body('parse-result')?['confidence'], 0.75), 'needs-triage', body('parse-result')?['team'])}"
+      needsHumanReview: "@{or(body('parse-result')?['needsHumanReview'], less(body('parse-result')?['confidence'], 0.75), equals(body('parse-result')?['type'], 'security'), equals(body('parse-result')?['priority'], 'P0'))}"
+
+  - id: respond
+    type: Respond to the agent
+    outputs:
+      type: "@{body('parse-result')?['type']}"
+      priority: "@{body('parse-result')?['priority']}"
+      team: "@{outputs('enforce-guardrails')?['team']}"
+      labels: "@{body('parse-result')?['labels']}"
+      summary: "@{body('parse-result')?['summary']}"
+      reasoning: "@{body('parse-result')?['reasoning']}"
+      confidence: "@{body('parse-result')?['confidence']}"
+      needsHumanReview: "@{outputs('enforce-guardrails')?['needsHumanReview']}"
+      followUpQuestions: "@{body('parse-result')?['followUpQuestions']}"
+
+errorHandling:
+  retry:
+    node: classify-issue
+    count: 1
+    policy: exponential
+  onFailure:
+    action: Respond to the agent
+    outputs:
+      errorCode: TRIAGE_FLOW_FAILED
+      needsHumanReview: true
+      message: 이슈 분류에 실패했습니다. 사람 검토 큐로 전달하세요.
+

@@ -1,0 +1,31 @@
+# Name: Classify Issue
+kind: TaskDialog
+inputs:
+  - kind: AutomaticTaskInput
+    propertyName: issueTitle
+    description: The GitHub issue title to classify.
+
+  - kind: AutomaticTaskInput
+    propertyName: issueBody
+    description: The GitHub issue body to classify.
+
+modelDescription: Classifies a GitHub issue after the user provides both a title and body. Returns a category, priority, summary, and whether human review is required.
+outputs:
+  - propertyName: category
+    description: One of security, bug, documentation, feature, or question.
+
+  - propertyName: priority
+    description: One of P0, P1, P2, or P3.
+
+  - propertyName: summary
+    description: A one-sentence summary of the classification.
+
+  - propertyName: needsHumanReview
+    description: True when the issue is security-related or P0.
+
+action:
+  kind: InvokeFlowTaskAction
+  flowId: 0d6fe1bc-4f73-4d24-97fd-d52a8df08481
+
+outputMode: All
+triggerCondition: false
