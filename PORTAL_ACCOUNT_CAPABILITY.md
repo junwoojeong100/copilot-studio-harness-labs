@@ -37,8 +37,6 @@ Developer 환경 직접 역할:
 판정:
 
 - Agent/workflow 생성 권한 충분
-- Solution import 권한 충분
-- Customization 권한 충분
 
 ## 디바이스 상태
 
@@ -54,12 +52,6 @@ GitHub Copilot agent가 실제 Published 상태이므로 이 환경에서 GitHub
 
 ## 실제 생성 검증
 
-Dataverse에 다음 solution이 존재합니다.
-
-- `TriageStandardAgent`
-- `TriageGitHubHarnessAgent`
-- `TriageWorkflowSolution`
-
 Agent:
 
 | Name | Bot ID | State |
@@ -74,12 +66,6 @@ Native workflow:
 | Classify Issue - Standard | `24623d9d-bb90-f111-b8da-000d3a329d3b` | 동일 | Published, run PASS |
 | Classify Issue - GitHub Harness | `8ce00fab-9db1-96fd-74b8-8fde4d78c522` | 동일 | Published, run PASS |
 
-Solution import로 만든 참조용 workflow도 삭제하지 않고 유지합니다.
-
-- Standard imported package: `0d6fe1bc-4f73-4d24-97fd-d52a8df08481`
-- GitHub imported package: `b28bf51a-c2b7-4f7a-af53-cfd72134b92a`
-- GitHub API reference: `48ed52fb-bc90-f111-b8da-000d3a329d3b`
-
 ## 남은 확인
 
 생성 자체는 완료됐습니다. 다음은 포털에서 사용자가 확인할 항목입니다.
@@ -90,7 +76,5 @@ Solution import로 만든 참조용 workflow도 삭제하지 않고 유지합니
 4. Power Platform DLP 예외 승인
 5. Standard Publish와 Test/Preview 실행
 6. GitHub agent에 native GitHub workflow 연결 후 재Publish
-
-PAC CLI 인증 프로필은 여전히 없지만, 웹 포털 사용과 생성에는 영향을 주지 않습니다.
 
 Standard publish의 CloudFlow `NotFound` 오류는 native tool 등록으로 해결됐습니다. 현재 남은 진단은 `DlpViolationError / BlockedConnector` 하나입니다. Dataverse `System Administrator` 역할만으로 tenant DLP를 변경할 수는 없습니다.

@@ -328,7 +328,6 @@ needsHumanReview = false
 | --- | --- |
 | 포털 접근 | 유효한 Copilot Studio author entitlement |
 | Agent/flow 생성 | Environment Maker 또는 상위 Dataverse 역할 |
-| Solution import | Create/Update customization 권한, System Customizer 권장 |
 | 전체 환경 관리 | System Administrator |
 | GitHub harness Build/Preview | Copilot Credits를 사용할 수 있는 환경 |
 | Connector 사용 | Connector 인증, 외부 서비스 권한, DLP 허용 |
@@ -353,9 +352,8 @@ Workflow 위치:
 
 - 새 경험: 왼쪽 **Workflows**
 - 이전 경험: 왼쪽 **Flows**
-- Solution explorer: `TriageWorkflowSolution`
 
-두 native workflow는 새 포털의 `Skills` trigger/response 형식으로 생성됐습니다. Solution ZIP의 workflow는 `(Imported Package)` 참조용 이름으로 유지합니다.
+두 native workflow는 새 포털의 `Skills` trigger/response 형식으로 생성됐습니다.
 
 Standard agent에는 native Standard flow가 Tool로 연결됐습니다. Publish는 조직 DLP가 Copilot Studio `Skills` connector를 차단해 실패합니다. Power Platform 관리자 또는 DLP 정책 소유자에게 다음 환경의 예외를 요청하세요.
 

@@ -13,7 +13,7 @@
 | GitHub Copilot harness | Agent | 생성 가능, 기존 agent가 Published 상태 |
 | GitHub Copilot harness | Workflow | `New workflow` 메뉴 활성화 |
 
-즉, 로컬 PAC 인증 여부와 무관하게 웹 포털 authoring은 가능합니다.
+즉, 현재 계정으로 웹 포털 authoring이 가능합니다.
 
 ## 직접 확인한 증거
 
@@ -100,7 +100,7 @@ Type: Developer
 - `Basic User`
 - `System Administrator`
 
-따라서 solution import, customization, agent/workflow 편집에 필요한 환경 권한은 충분합니다.
+따라서 agent/workflow 생성과 편집에 필요한 환경 권한은 충분합니다.
 
 ### 추가 환경 역할
 
@@ -139,12 +139,6 @@ Power Platform Billing Policy API:
 
 즉, 현재 기능 사용은 PAYG billing policy 기반이 아닙니다.
 
-### PAC CLI 인증 프로필
-
-- `pac auth list`: 프로필 없음
-
-이는 CLI import가 아직 준비되지 않았다는 뜻일 뿐, 웹 포털 authoring 권한과는 무관합니다.
-
 ### FinanceServiceDesk 환경 membership
 
 `FinanceServiceDesk(FinSup)`:
@@ -178,18 +172,6 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 | Standard agent publish | Tool 연결 완료, tenant DLP로 차단 |
 | Standard agent flow publish/run | Published, direct run PASS |
 | 웹 Test/Preview | 가능 |
-| Solution import | Dataverse API로 완료 |
-| PAC CLI import | PAC 인증 프로필은 없음 |
-
-## 로컬 패키지 상태
-
-- Standard 비-GenAI agent package
-- GitHub Copilot harness agent package
-- Standard workflow
-- GitHub workflow
-- Skill package
-- 로컬 테스트 5개 통과
-- PAC solution pack/unpack 통과
 
 ## 다음 작업
 
@@ -215,7 +197,6 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 - GitHub native workflow direct run
 - Standard agent tool 연결
 - GitHub agent Published
-- Solution import
 
 ### 추가 확인이 필요한 것
 
