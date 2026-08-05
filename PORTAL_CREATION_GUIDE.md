@@ -118,8 +118,8 @@ Name:
 Classify Issue - Standard
 
 Description:
-Deterministically classifies a GitHub issue and responds synchronously
-to a Standard harness agent.
+Runs a simple issue-triage smoke test and responds synchronously
+to the Standard harness agent.
 ```
 
 ### Trigger
@@ -130,50 +130,38 @@ to a Standard harness agent.
 
 | Name | Type | Required |
 | --- | --- | --- |
-| `issueTitle` | Text | Yes |
-| `issueBody` | Text | Yes |
+| `Text` (`issueTitle` 용도) | Text | Yes |
+| `Text 1` (`issueBody` 용도) | Text | Yes |
 
 ### Action 순서
 
-1. **Compose**: title과 body를 소문자로 결합
-2. **Compose**: category 계산
-3. **Compose**: priority 계산
-4. **Compose**: summary 생성
-5. **Respond to the agent**
+현재 게시된 최소 구성:
 
-Category 규칙:
+1. **Combined text**
+2. **Category**
+3. **Respond to the agent 2**
 
-```text
-security/token/vulnerability -> security
-bug/error/fail/crash/500/503 -> bug
-doc/guide/quickstart/typo -> documentation
-feature/request/enhancement -> feature
-otherwise -> question
-```
+이 구성은 agent-to-flow 호출과 동기 응답 경로를 빠르게 확인하기 위한
+smoke test입니다. 운영 분류기로 확장할 때는 다음 규칙을 Compose 단계로
+추가합니다.
 
-Priority 규칙:
-
-```text
-outage/all users/all customers/data loss -> P0
-security/no workaround/crash -> P1
-documentation/question -> P3
-otherwise -> P2
-```
-
-출력:
-
-| Name | Type |
+| 분류 | 권장 규칙 |
 | --- | --- |
-| `category` | Text |
-| `priority` | Text |
-| `summary` | Text |
-| `needsHumanReview` | Boolean |
+| Category | security/token/vulnerability → security |
+| Category | bug/error/fail/crash/500/503 → bug |
+| Category | doc/guide/quickstart/typo → documentation |
+| Category | feature/request/enhancement → feature |
+| Priority | outage/all users/all customers/data loss → P0 |
+| Priority | security/no workaround/crash → P1 |
+| Priority | documentation/question → P3 |
+| Priority | otherwise → P2 |
 
 필수 설정:
 
 - **Asynchronous response: Off**
 - 일반 실행 시간: 100초 미만
 - Publish 후 agent tool로 추가
+- 현재 flow ID: `392d1a43-33d8-247c-fb53-b45dd60eb31c`
 
 ## 3. GitHub Copilot harness agent 만들기
 
@@ -191,7 +179,7 @@ Simple Issue Triage GitHub Harness
 
 Description:
 Uses GitHub Copilot orchestration to collect issue information and call
-a workflow that returns a deterministic triage result.
+a workflow that returns a structured smoke-test result.
 ```
 
 Instructions:
@@ -250,18 +238,44 @@ Copilot harness agent.
 
 | Name | Type | Required |
 | --- | --- | --- |
-| `issueTitle` | Text | Yes |
-| `issueBody` | Text | Yes |
+| `Text` (`issueTitle` 용도) | Text | Yes |
+| `Text 1` (`issueBody` 용도) | Text | Yes |
+
+현재 활성 workflow는 포털 기본 입력 이름인 `Text`, `Text 1`을 사용합니다.
+새로 만드는 경우에는 이해하기 쉽도록 `issueTitle`, `issueBody`로 이름을 변경해도
+됩니다. Agent tool 매핑에서는 실제 포털에 표시되는 입력 이름을 사용합니다.
 
 ### Node
 
-Standard flow와 동일한 결정론적 규칙을 사용합니다.
+현재 활성 workflow는 포털 expression 편집 복잡도를 줄이고 agent-to-workflow
+연결을 빠르게 검증하기 위한 최소 smoke-test 프로필을 사용합니다.
 
 1. Combined text
 2. Category
 3. Priority
 4. Summary
 5. Respond to the agent
+
+현재 노드와 응답 값:
+
+| 위치 | 값 |
+| --- | --- |
+| Category Compose | 입력 결합문에 `503`이 있으면 `bug`, 아니면 `question` |
+| Respond `category` | `bug` |
+| Respond `priority` | `P0` |
+| Respond `summary` | `Classified as bug with priority P0.` |
+| Respond `needsHumanReview` | `true` |
+
+Category expression:
+
+```text
+if(contains(outputs('Compose'),'503'),'bug','question')
+```
+
+현재 Respond 값은 호출·구조화 응답·publish·run 경로를 검증하기 위해 고정했습니다.
+따라서 이 workflow는 입력별 범용 분류기가 아닙니다. Security/Documentation 등
+범용 규칙이 필요하면 Standard flow 규칙을 기준으로 Compose 결과를 Respond 출력에
+연결하면서 단계적으로 확장합니다.
 
 출력:
 
@@ -274,25 +288,53 @@ Standard flow와 동일한 결정론적 규칙을 사용합니다.
 7. 전체 **Run flow test**를 실행합니다.
 8. Publish합니다.
 9. GitHub harness agent의 tool로 연결합니다.
+   - 현재 활성 ID: `a6666167-9cca-6bb0-ad80-8490bb022981`
 
 ## 테스트 입력
 
-### P0 bug
+### Standard flow smoke test
 
 ```text
-Title: Checkout API returns 503 for all customers
-Body: There is no workaround.
+Text: Login fails
+Text 1: 503 error
 ```
 
-예상:
+실제 확인:
+
+```text
+Run ID: 08584156703223952675185929598CU03
+Duration: 123 ms
+Status: Succeeded
+All nodes: Succeeded
+```
+
+### GitHub workflow smoke test
+
+```text
+Text: 503 error
+Text 1: urgent
+```
+
+예상 응답 계약:
 
 ```text
 category = bug
 priority = P0
+summary = Classified as bug with priority P0.
 needsHumanReview = true
 ```
 
-### Security
+실제 확인:
+
+```text
+Run ID: 08584156712497958263468546463CU12
+Duration: 149 ms
+Status: Succeeded
+All nodes: Succeeded
+Flow checker: 0 errors, 0 warnings
+```
+
+### 운영 규칙 확장 예시: Security
 
 ```text
 Title: Access token appears in debug logs
@@ -307,7 +349,7 @@ priority = P1
 needsHumanReview = true
 ```
 
-### Documentation
+### 운영 규칙 확장 예시: Documentation
 
 ```text
 Title: Python quickstart uses the old package name
@@ -339,14 +381,21 @@ needsHumanReview = false
 
 다음 리소스는 이미 생성됐으며 삭제하지 않았습니다.
 
+**생성은 4종 모두 완료됐지만 배포는 3종만 완료됐습니다.**
+`Simple Issue Triage Standard`는 tenant DLP가 `Skills` connector를 차단하므로
+Draft 상태이며 아직 Publish되지 않았습니다.
+
 | Type | Name | Identifier | State |
 | --- | --- | --- | --- |
 | Standard agent | `Simple Issue Triage Standard` | `bbbb7d70-5fa8-4500-a2a1-d48ff91b71e2` | Draft: DLP blocked |
-| Standard native agent flow | `Classify Issue - Standard` | `24623d9d-bb90-f111-b8da-000d3a329d3b` | Published, run PASS |
+| Standard native agent flow | `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published, run PASS (123 ms) |
 | GitHub agent | `Simple Issue Triage GitHub Harness` | `triage_SimpleIssueTriageGitHubHarness` | Published |
-| GitHub native workflow | `Classify Issue - GitHub Harness` | `8ce00fab-9db1-96fd-74b8-8fde4d78c522` | Published, run PASS |
+| GitHub native workflow | `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published, checker PASS, run PASS (149 ms) |
 
-포털 목록에 즉시 보이지 않으면 브라우저를 새로 고치거나 환경을 다시 선택하세요.
+Agent flows 목록에는 다음 두 항목만 있습니다.
+
+- `Classify Issue - Standard`
+- `Classify Issue - GitHub Harness`
 
 Workflow 위치:
 
@@ -355,7 +404,24 @@ Workflow 위치:
 
 두 native workflow는 새 포털의 `Skills` trigger/response 형식으로 생성됐습니다.
 
-Standard agent에는 native Standard flow가 Tool로 연결됐습니다. Publish는 조직 DLP가 Copilot Studio `Skills` connector를 차단해 실패합니다. Power Platform 관리자 또는 DLP 정책 소유자에게 다음 환경의 예외를 요청하세요.
+## 남은 운영 작업
+
+1. GitHub agent Preview에서 workflow end-to-end 호출을 확인합니다.
+2. Standard agent publish를 위해 조직 DLP 예외를 요청합니다.
+3. DLP 예외 후 Standard agent를 Publish하고 end-to-end 호출을 확인합니다.
+
+### Standard agent DLP 예외
+
+Standard agent의 **Tools**에 `Classify Issue - Standard` 연결을 완료했습니다.
+Tool 입력 `Text`, `Text 1`은 모두 **Dynamically fill with AI**로 설정됐습니다.
+Agent Publish는 조직 DLP가 Copilot Studio `Skills` connector를 차단해 실패합니다.
+Power Platform 관리자 또는 DLP 정책 소유자에게 다음 환경의 예외를 요청하세요.
+
+현재 계정의 Dataverse `System Administrator` 역할만으로는 tenant DLP를 변경할 수
+없으며 Copilot Studio 내부의 우회 방법도 없습니다. 가장 안전한 해결책은 이
+Developer 환경만 tenant 정책에서 제외하고, `Skills` 연결을 허용하는 별도
+환경 정책을 적용하는 것입니다. 관리자 승인이 전에는 Standard agent를 Draft로
+유지합니다.
 
 ```text
 https://admin.powerplatform.microsoft.com/security/dataprotection/dlp/environmentFilter/e477cbf2-150c-eee7-a852-b29ac07f541d

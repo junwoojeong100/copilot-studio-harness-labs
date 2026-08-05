@@ -29,7 +29,7 @@ Type: Developer
 
 새 경험의 **Agents** 페이지에서 확인:
 
-- Agent: `Untitled Agent`
+- Agent: `Simple Issue Triage GitHub Harness`
 - Status: `Published`
 - Owner: `Junwoo Jeong`
 - Powered by: `GitHub Copilot`
@@ -54,7 +54,9 @@ Type: Developer
 판정:
 
 - GitHub Copilot harness workflow 생성 가능
-- 실제 실행·publish는 workflow를 만든 뒤 별도 테스트 필요
+- Workflow publish와 직접 실행 완료
+- Flow checker 0 errors / 0 warnings
+- 직접 실행 149 ms, Succeeded
 
 ### Standard harness agent
 
@@ -80,6 +82,9 @@ Type: Developer
 판정:
 
 - Standard harness agent flow 생성 가능
+- 실제 flow ID: `392d1a43-33d8-247c-fb53-b45dd60eb31c`
+- 직접 실행: 123 ms, Succeeded
+- Run ID: `08584156703223952675185929598CU03`
 
 ## 계정에 있는 것
 
@@ -161,6 +166,9 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 
 ## 현재 실습 가능 범위
 
+현재 리소스 상태는 **4종 생성 완료, 3종 Published, 1종 Draft**입니다.
+Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필요합니다.
+
 | 단계 | 현재 상태 |
 | --- | --- |
 | Standard agent 생성 | 가능 |
@@ -170,17 +178,14 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 | GitHub agent publish | 가능함을 기존 Published agent로 확인 |
 | GitHub workflow publish/run | Published, direct run PASS |
 | Standard agent publish | Tool 연결 완료, tenant DLP로 차단 |
-| Standard agent flow publish/run | Published, direct run PASS |
+| Standard agent flow publish/run | Published, direct run PASS (123 ms) |
 | 웹 Test/Preview | 가능 |
 
-## 다음 작업
+## 남은 운영 작업
 
-웹 포털에서 다음 순서로 실제 구성을 생성하고 테스트합니다.
-
-1. Power Platform DLP 정책에서 Copilot Studio `Skills` connector 허용 또는 환경 예외 승인
-2. Standard agent Publish와 Preview
-3. GitHub agent에 native GitHub workflow 연결
-4. GitHub agent 재Publish와 Preview
+1. GitHub agent end-to-end Preview
+2. Power Platform DLP 정책에서 Copilot Studio `Skills` connector 허용 또는 환경 예외 승인
+3. Standard agent Publish와 end-to-end Preview
 
 ## 최종 판정
 
@@ -193,13 +198,19 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 
 ### 실제 확인 완료
 
-- Standard native workflow direct run
-- GitHub native workflow direct run
-- Standard agent tool 연결
+- Standard native workflow `392d1a43-33d8-247c-fb53-b45dd60eb31c` publish
+- Standard native workflow direct run: 123 ms, Succeeded
+- Standard native workflow Run ID: `08584156703223952675185929598CU03`
+- GitHub native workflow `a6666167-9cca-6bb0-ad80-8490bb022981` publish
+- GitHub native workflow Flow checker 0 errors / 0 warnings
+- GitHub native workflow direct run: 149 ms, Succeeded
+- GitHub native workflow outputs: `bug`, `P0`, `Classified as bug with priority P0.`, `true`
+- Standard agent tool `Classify Issue - Standard` 연결
 - GitHub agent Published
 
 ### 추가 확인이 필요한 것
 
+- `Simple Issue Triage Standard` Publish
 - Standard agent + agent flow end-to-end run
-- GitHub agent + workflow end-to-end run
+- GitHub agent + workflow end-to-end Preview
 - tenant DLP 예외 승인

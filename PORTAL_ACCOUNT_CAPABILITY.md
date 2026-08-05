@@ -52,6 +52,9 @@ GitHub Copilot agent가 실제 Published 상태이므로 이 환경에서 GitHub
 
 ## 실제 생성 검증
 
+리소스 4종의 생성은 완료됐습니다. 배포는 Standard agent를 제외한 3종이
+완료됐으며, `Simple Issue Triage Standard`는 DLP 차단으로 Draft 상태입니다.
+
 Agent:
 
 | Name | Bot ID | State |
@@ -63,18 +66,43 @@ Native workflow:
 
 | Name | Portal flow ID | Dataverse workflow ID | State |
 | --- | --- | --- | --- |
-| Classify Issue - Standard | `24623d9d-bb90-f111-b8da-000d3a329d3b` | 동일 | Published, run PASS |
-| Classify Issue - GitHub Harness | `8ce00fab-9db1-96fd-74b8-8fde4d78c522` | 동일 | Published, run PASS |
+| Classify Issue - Standard | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | 동일 | Published, run PASS (123 ms) |
+| Classify Issue - GitHub Harness | `a6666167-9cca-6bb0-ad80-8490bb022981` | 동일 | Published, checker 0/0, run PASS (149 ms) |
 
-## 남은 확인
+Standard flow 직접 검증:
 
-생성 자체는 완료됐습니다. 다음은 포털에서 사용자가 확인할 항목입니다.
+```text
+Input 1: Login fails
+Input 2: 503 error
+Run ID: 08584156703223952675185929598CU03
+Status: Succeeded
+Duration: 123 ms
+All nodes: Succeeded
+```
 
-1. Agents 목록에서 agent 두 개 확인
-2. Flows/Workflows 목록에서 workflow 두 개 확인
-3. Standard agent의 Tools에서 native Standard workflow 연결 확인
-4. Power Platform DLP 예외 승인
-5. Standard Publish와 Test/Preview 실행
-6. GitHub agent에 native GitHub workflow 연결 후 재Publish
+GitHub workflow 직접 검증:
 
-Standard publish의 CloudFlow `NotFound` 오류는 native tool 등록으로 해결됐습니다. 현재 남은 진단은 `DlpViolationError / BlockedConnector` 하나입니다. Dataverse `System Administrator` 역할만으로 tenant DLP를 변경할 수는 없습니다.
+```text
+Input 1: 503 error
+Input 2: urgent
+Run ID: 08584156712497958263468546463CU12
+Status: Succeeded
+Duration: 149 ms
+Outputs: bug / P0 / Classified as bug with priority P0. / true
+```
+
+Agent flows 목록에는 Standard와 GitHub Harness flow가 각각 하나씩 존재합니다.
+Standard agent의 Tools에도 `Classify Issue - Standard` 연결을 완료했습니다.
+
+## 남은 운영 작업
+
+리소스 생성과 workflow 직접 실행은 완료됐습니다. Standard agent 배포는
+아직 완료되지 않았습니다.
+
+1. GitHub agent end-to-end Preview
+2. Power Platform DLP 예외 승인
+3. Standard agent Publish 및 end-to-end Test
+
+Standard publish의 CloudFlow `NotFound` 오류는 native tool 등록으로 해결됐습니다.
+현재 남은 차단 원인은 `DlpViolationError / BlockedConnector`입니다. Dataverse
+`System Administrator` 역할만으로 tenant DLP를 변경할 수는 없습니다.
