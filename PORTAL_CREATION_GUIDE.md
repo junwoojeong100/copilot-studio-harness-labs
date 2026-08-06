@@ -133,8 +133,10 @@ to the Standard harness agent.
 > Agent · Classify · M365 Copilot · Human review · Connector ·
 > **Function** · Variable · If/Else · Loop · Note 입니다.
 > 여기에는 `Data Operation → Compose`가 **없습니다**.
-> 실제 `Combined text` / `Category` 노드는 내부적으로 `builtinFunction` 타입이므로,
-> modern 디자이너에서는 **Function** 노드로 만듭니다.
+> 각 액션 노드는 내부적으로 `builtinFunction` 타입이고,
+> 노드 구성 패널에 `Select function, currently ...` 선택기가 있습니다.
+> 즉 modern 디자이너에서는 **Function** 노드를 추가한 뒤
+> 원하는 함수(`Respond to the agent` 등)를 고르는 방식입니다.
 > classic(Power Automate 계열) 디자이너에서 열릴 때만
 > `Data Operation → Compose`를 사용합니다.
 
@@ -164,14 +166,26 @@ if(contains(outputs('<결합 노드의 실제 이름>'), '503'), 'bug', 'questio
 
 `Respond to the agent` 출력 계약:
 
-| 출력 이름 | 형식 |
-| --- | --- |
-| `category` | Text |
-| `priority` | Text |
-| `summary` | Text |
-| `needsHumanReview` | Boolean |
+> **⚠️ 실측 결과: 현재 게시된 flow의 출력은 `category` 하나뿐입니다.**
+> 노드 구성 패널(`Respond to the agent 2`)에서 직접 확인한 내용:
+> - 설명: `Respond to the calling agent with typed outputs.`
+> - **Outputs**: `category` 1개 (값은 앞 노드 결과 토큰)
+> - `Add an output` 버튼으로 필드를 추가합니다.
+>
+> 즉 아래 4-필드 계약은 **목표 구성**이며, 현재 리소스는 아직 1-필드입니다.
+> A-2 topic 메시지에서 `priority` / `summary` / `needsHumanReview`를 참조하면
+> 값이 비어 있게 됩니다. 4-필드로 쓰려면 먼저 출력을 추가하세요.
 
-이 네 값은 A-2의 topic 메시지와 이름이 정확히 일치해야 합니다.
+목표 출력 계약(4-필드):
+
+| 출력 이름 | 형식 | 현재 상태 |
+| --- | --- | --- |
+| `category` | Text | ✅ 존재 |
+| `priority` | Text | ❌ 미생성 |
+| `summary` | Text | ❌ 미생성 |
+| `needsHumanReview` | Boolean | ❌ 미생성 |
+
+이 값들은 A-2의 topic 메시지와 이름이 정확히 일치해야 합니다.
 
 ### 필수 설정
 
@@ -303,6 +317,15 @@ Priority: {priority}
 Summary: {summary}
 Human review required: {needsHumanReview}
 ```
+
+> **⚠️ 현재 flow는 `category` 출력 하나만 정의되어 있습니다(실측).**
+> 위 메시지를 그대로 쓰면 `{priority}` / `{summary}` / `{needsHumanReview}`가
+> 비어 나옵니다. 우선은 아래처럼 축소해서 시작하고,
+> A-1에서 출력을 추가한 뒤 확장하세요.
+>
+> ```text
+> Category: {category}
+> ```
 
 ### 3단계: 테스트와 게시
 
@@ -496,6 +519,7 @@ Text 1: 503 error
 | Run ID | `08584156703223952675185929598CU03` | 📄 |
 | Duration | 123 ms | ✅ |
 | Status | Succeeded | ✅ |
+| 응답 출력 | `category` 1개 (`priority`·`summary`·`needsHumanReview` 없음) | ✅ |
 
 포털 **Activity** 패널에서 실제로 확인한 실행 3건:
 
@@ -629,7 +653,14 @@ needsHumanReview = false
 | Lab B workflow 실행 기록(Run ID / 149 ms) | 📄 기록값, 재현 안 함 |
 | Standard agent DLP 차단 오류 메시지 | 📄 기록값, 재현 안 함 |
 | agent → flow end-to-end 호출 | ❌ 미확인 |
-| `Respond to the agent` 출력 필드명 | ❌ 미확인(토픽 메시지에서 추론) |
+
+### 실측으로 정정된 항목
+
+| 항목 | 문서에 있던 내용 | 실제 |
+| --- | --- | --- |
+| `Respond to the agent 2` 출력 | `category`·`priority`·`summary`·`needsHumanReview` 4개 | **`category` 1개만 존재** |
+| Action 추가 경로 | `Data Operation → Compose` | modern 디자이너는 **Function** 노드 + 함수 선택기 |
+| 검증 도구 | Flow checker | modern 디자이너에는 없음(Save/Test/Publish + Activity) |
 
 ### 남은 작업
 

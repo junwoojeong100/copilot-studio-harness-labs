@@ -65,7 +65,7 @@ Lab B (GitHub Copilot harness)
 
 | 리소스 | 포털 상태 | 검증 |
 | --- | --- | --- |
-| `Classify Issue - Standard` (modern workflow) | Published ✅ | Activity 패널에 Succeeded 실행 3건 ✅ (123 / 120 / 141 ms) |
+| `Classify Issue - Standard` (modern workflow) | Published ✅ | Activity 패널에 Succeeded 실행 3건 ✅ (123 / 120 / 141 ms) · 출력은 `category` 1개 ✅ |
 | `Classify Issue - GitHub Harness` (classic workflow) | Published ✅ | checker 0/0, 149 ms 📄 |
 | `Simple Issue Triage GitHub Harness` (agent) | Published ✅ | — |
 | `Simple Issue Triage Standard` (agent) | **Last published: Never** ✅ | 테넌트 DLP가 `Skills with Copilot Studio` connector 차단 📄 |
@@ -73,10 +73,15 @@ Lab B (GitHub Copilot harness)
 **4종 생성 완료, 3종 게시 완료, 1종 Draft**입니다.
 
 > **실측에서 드러난 불일치**
-> 포털 Workflows 목록은 `Classify Issue - Standard`를 **modern workflow**,
-> `Classify Issue - GitHub Harness`를 **classic workflow**로 분류합니다.
-> 이름이 가리키는 harness와 목록상 분류가 반대로 보입니다.
-> 다만 `Classify Issue - Standard`의 **노드 구성은 가이드 A-1과 정확히 일치**합니다.
+> 1. 포털 Workflows 목록은 `Classify Issue - Standard`를 **modern workflow**,
+>    `Classify Issue - GitHub Harness`를 **classic workflow**로 분류합니다.
+>    이름이 가리키는 harness와 목록상 분류가 반대로 보입니다.
+>    다만 `Classify Issue - Standard`의 **노드 구성은 가이드 A-1과 정확히 일치**합니다.
+> 2. `Respond to the agent 2` 노드의 **출력은 `category` 하나뿐**입니다.
+>    문서가 가정하던 `priority` / `summary` / `needsHumanReview`는 존재하지 않습니다.
+> 3. modern 디자이너에는 `Data Operation → Compose`도, **Flow checker**도 없습니다.
+>    액션은 **Function** 노드로 추가하고 함수 선택기에서 종류를 고릅니다.
+>
 > 자세한 내용은 실습 가이드의 "현재 리소스 상태"를 참고하세요.
 
 두 flow는 포털 연결과 응답 경로를 검증하는 **스모크 테스트 구성**입니다.
@@ -84,10 +89,11 @@ Lab B (GitHub Copilot harness)
 
 ### 남은 작업
 
-1. GitHub agent Preview에서 workflow end-to-end 호출 확인 (❌ 미확인)
-2. `Skills with Copilot Studio` connector에 대한 테넌트 DLP 예외 승인
-3. 예외 승인 후 Standard agent 게시 및 end-to-end 확인
-4. 두 flow의 이름을 실제 형식(modern / classic)에 맞게 정리
+1. `Respond to the agent 2`에 `priority` / `summary` / `needsHumanReview` 출력 추가
+2. GitHub agent Preview에서 workflow end-to-end 호출 확인 (❌ 미확인)
+3. `Skills with Copilot Studio` connector에 대한 테넌트 DLP 예외 승인
+4. 예외 승인 후 Standard agent 게시 및 end-to-end 확인
+5. 두 flow의 이름을 실제 형식(modern / classic)에 맞게 정리
 
 ## 범위
 
