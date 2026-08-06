@@ -60,21 +60,27 @@ Lab A와 Lab B는 서로 독립적입니다. 어느 쪽을 먼저 해도 됩니�
 ## 포털 진입과 harness 전환
 
 1. <https://copilotstudio.microsoft.com>에 로그인합니다.
+   테넌트가 새 경험에 온보딩된 경우 `copilotstudio.preview.microsoft.com`으로
+   리디렉션될 수 있습니다. 정상입니다.
 2. 환경 선택기에서 **Junwoo Jeong**을 선택합니다.
-3. 오른쪽 위 **New experience** 토글로 harness를 전환합니다.
+3. harness를 전환합니다. 진입점은 테넌트 롤아웃 상태에 따라 둘 중 하나입니다.
+   - 상단 배너 **New Copilot Studio experience → Try now** 버튼
+   - 오른쪽 위 **New experience** 토글
 
-| 토글 | Harness | 왼쪽 메뉴 |
+| 상태 | Harness | 왼쪽 메뉴 (실측) |
 | --- | --- | --- |
-| **On** | GitHub Copilot | **Agents**, **Workflows** |
-| **Off** | Standard | 기존 Copilot Studio 경험 |
+| 새 경험 **On** | GitHub Copilot | Home · Agent Ops · Chat · **Agents** · **Workflows** · Apps (Preview) |
+| 새 경험 **Off** | Standard | Home · Operate · **Agents** · **Flows** · Tools · Explore Power Platform |
 
 Standard harness 산출물은 토글을 끄지 않고 Home의 **Other ways to build**로도 만들 수 있습니다.
 
-> **메뉴 이름 주의**
-> Standard agent flow는 테넌트 롤아웃 상태에 따라 **Workflows** 페이지의
-> **New agent flow** 또는 이전 경험의 **Flows** 메뉴 아래에 있습니다.
-> 두 경로 모두 같은 대상을 가리킵니다. New experience에서 agent flow를
-> 만들거나 편집하면 **새 브라우저 탭**으로 열립니다.
+> **메뉴 이름 주의 (실측 기준)**
+> 이전 경험의 **Flows** 항목은 툴팁이 `Agent flows`이고, 클릭하면
+> 실제 라우트는 **`/workflows`** 입니다. 즉 Learn 문서의
+> "Workflows 페이지 → New agent flow"와 **같은 대상**입니다.
+> 라벨은 테넌트 롤아웃에 따라 `Flows` 또는 `Workflows`로 다르게 보일 수 있습니다.
+> Workflows 목록에서 항목은 **modern workflow**(포털 내 디자이너에서 열림)와
+> **classic workflow**(새 탭에서 열림) 두 종류로 구분됩니다.
 
 ---
 
@@ -114,13 +120,23 @@ to the Standard harness agent.
 
 ### Action 구성
 
-현재 게시된 최소 구성은 3단계입니다.
+현재 게시된 최소 구성은 3단계입니다. **아래 표는 포털에서 직접 확인한 구성입니다.**
 
-| 순서 | Action 종류 | 표시 이름 | 역할 |
-| --- | --- | --- | --- |
-| 1 | Data Operation → **Compose** | `Combined text` | 두 입력을 하나의 문자열로 결합 |
-| 2 | Data Operation → **Compose** | `Category` | 결합 문자열로 카테고리 판정 |
-| 3 | **Respond to the agent** | `Respond to the agent 2` | 결과를 호출한 agent에 동기 반환 |
+| 순서 | 표시 이름 | 역할 |
+| --- | --- | --- |
+| 1 | `Combined text` | 두 입력을 하나의 문자열로 결합 |
+| 2 | `Category` | 결합 문자열로 카테고리 판정 |
+| 3 | `Respond to the agent 2` | 결과를 호출한 agent에 동기 반환 |
+
+> **디자이너에 따라 추가 방법이 다릅니다**
+> 이 flow가 열리는 **modern workflow 디자이너**의 노드 팔레트는
+> Agent · Classify · M365 Copilot · Human review · Connector ·
+> **Function** · Variable · If/Else · Loop · Note 입니다.
+> 여기에는 `Data Operation → Compose`가 **없습니다**.
+> 실제 `Combined text` / `Category` 노드는 내부적으로 `builtinFunction` 타입이므로,
+> modern 디자이너에서는 **Function** 노드로 만듭니다.
+> classic(Power Automate 계열) 디자이너에서 열릴 때만
+> `Data Operation → Compose`를 사용합니다.
 
 `Combined text` 입력 구성:
 
@@ -165,10 +181,16 @@ if(contains(outputs('<결합 노드의 실제 이름>'), '503'), 'bug', 'questio
 
 ### 게시와 직접 실행 테스트
 
+modern workflow 디자이너 상단 구성(실측): **Build / Activity / Monitor** 탭,
+Undo · Redo · Version history · **Save** · **Test** · **Publish**.
+
 1. **Save**합니다.
-2. **Flow checker**에서 오류 0건을 확인합니다.
-3. **Publish**합니다.
-4. **Run flow test**로 직접 실행합니다.
+2. **Test**로 직접 실행합니다.
+3. **Publish**합니다. 게시 후에는 버튼 옆에 `No changes to publish`가 표시됩니다.
+4. **Activity** 탭에서 실행 이력(상태·소요 시간)을 확인합니다.
+
+> classic workflow 디자이너에서 열린 경우에는 **Flow checker**와
+> **Run flow test**를 사용합니다. modern 디자이너에는 Flow checker가 없습니다.
 
 테스트 입력:
 
@@ -180,11 +202,10 @@ Text 1: 503 error
 실제 확인된 결과:
 
 ```text
-Flow ID:  392d1a43-33d8-247c-fb53-b45dd60eb31c
-Run ID:   08584156703223952675185929598CU03
-Duration: 123 ms
-Status:   Succeeded
-All nodes: Succeeded
+Flow ID:  392d1a43-33d8-247c-fb53-b45dd60eb31c   (URL로 재확인 ✅)
+Run ID:   08584156703223952675185929598CU03      (기록값 📄)
+Duration: 123 ms                                  (Activity 탭에서 재확인 ✅)
+Status:   Succeeded                               (재확인 ✅)
 ```
 
 > **게시하지 않으면 다음 단계에서 tool 목록에 나타나지 않습니다.**
@@ -459,6 +480,10 @@ It returns category, priority, summary, and needsHumanReview.
 
 ## 테스트 입력과 기대 결과
 
+> **표기 규칙**
+> ✅ = 2026-02 포털에서 **직접 재확인**한 값
+> 📄 = 최초 실습 세션의 **기록값**(이번에 재현하지 않음)
+
 ### Lab A: Standard flow 스모크 테스트
 
 ```text
@@ -466,11 +491,19 @@ Text:   Login fails
 Text 1: 503 error
 ```
 
-| 항목 | 결과 |
-| --- | --- |
-| Run ID | `08584156703223952675185929598CU03` |
-| Duration | 123 ms |
-| Status | Succeeded |
+| 항목 | 결과 | 검증 |
+| --- | --- | --- |
+| Run ID | `08584156703223952675185929598CU03` | 📄 |
+| Duration | 123 ms | ✅ |
+| Status | Succeeded | ✅ |
+
+포털 **Activity** 패널에서 실제로 확인한 실행 3건:
+
+| 시각 | Duration | Status |
+| --- | --- | --- |
+| 8/5 10:29 PM | 123 ms | Succeeded ✅ |
+| 8/5 8:54 PM | 120 ms | Succeeded ✅ |
+| 8/5 8:50 PM | 141 ms | Succeeded ✅ |
 
 ### Lab B: GitHub workflow 스모크 테스트
 
@@ -488,12 +521,16 @@ summary          = Classified as bug with priority P0.
 needsHumanReview = true
 ```
 
-| 항목 | 결과 |
-| --- | --- |
-| Run ID | `08584156712497958263468546463CU12` |
-| Duration | 149 ms |
-| Status | Succeeded |
-| Flow checker | 0 errors, 0 warnings |
+| 항목 | 결과 | 검증 |
+| --- | --- | --- |
+| Run ID | `08584156712497958263468546463CU12` | 📄 |
+| Duration | 149 ms | 📄 |
+| Status | Succeeded | 📄 |
+| Flow checker | 0 errors, 0 warnings | 📄 |
+
+> Lab B의 flow는 **classic workflow**여서 별도 탭(Power Automate 계열 디자이너)에서
+> 열립니다. 이번 재확인에서는 목록의 **Published** 상태까지만 검증했고,
+> 실행 기록은 재현하지 않았습니다.
 
 ## 확장: 운영용 분류 규칙
 
@@ -546,16 +583,53 @@ needsHumanReview = false
 
 ## 현재 리소스 상태
 
-**4종 모두 생성 완료, 3종 게시 완료, 1종 Draft**입니다.
+아래는 **2026-02 포털에서 직접 확인**한 상태입니다.
 
-| Type | Name | Identifier | State |
+환경: `Junwoo Jeong` / `e477cbf2-150c-eee7-a852-b29ac07f541d`
+
+### Agents 페이지 (실측)
+
+| Name | Type | Last published | Owner |
 | --- | --- | --- | --- |
-| Standard agent | `Simple Issue Triage Standard` | `bbbb7d70-5fa8-4500-a2a1-d48ff91b71e2` | Draft (DLP 차단) |
-| Standard agent flow | `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published, run PASS (123 ms) |
-| GitHub agent | `Simple Issue Triage GitHub Harness` | Bot ID `7b3b35af-22a1-49b8-bd4d-a79576f51730`<br>Schema `triage_SimpleIssueTriageGitHubHarness` | Published |
-| GitHub workflow | `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published, checker PASS, run PASS (149 ms) |
+| `Simple Issue Triage Standard` | Agent | **Never** (= Draft) | Junwoo Jeong |
+| `Simple Issue Triage GitHub Har…` | Agent | 게시됨 | Junwoo Jeong |
 
-두 native workflow는 새 포털의 `Skills` trigger/response 형식으로 생성됐습니다.
+### Workflows 페이지 (실측, `2 items`)
+
+| Name | 종류 | Status | Enabled |
+| --- | --- | --- | --- |
+| `Classify Issue - Standard` | **modern workflow** (포털 내 디자이너) | Published | On |
+| `Classify Issue - GitHub Harness` | **classic workflow** (새 탭에서 열림) | Published | On |
+
+### `Classify Issue - Standard` 디자이너 (실측)
+
+- ID: `392d1a43-33d8-247c-fb53-b45dd60eb31c` (URL로 확인)
+- 상태: **Published**, `No changes to publish`
+- 탭: **Build / Activity / Monitor**
+- 노드 구성:
+  `When an agent calls the flow` → `Combined text` → `Category` → `Respond to the agent 2`
+- 노드 팔레트: Agent · Classify · M365 Copilot · Human review · Connector ·
+  Function · Variable · If/Else · Loop · Note
+
+> **⚠️ 이름과 실제 아티팩트 형식이 어긋납니다**
+> 포털 Workflows 목록은
+> `Classify Issue - Standard`를 **modern workflow**(포털 내 디자이너에서 열림),
+> `Classify Issue - GitHub Harness`를 **classic workflow**(새 탭에서 열림)로 분류합니다.
+> 이름이 가리키는 harness와 목록상 분류가 반대로 보입니다.
+> 다시 만들 때는 이름을 실제 형식에 맞게 정하세요.
+>
+> 반면 **노드 구성은 이 문서의 A-1 설명과 정확히 일치**합니다
+> (`Combined text` → `Category` → `Respond to the agent 2`).
+> 즉 A-1 절차 자체는 실제 리소스와 어긋나지 않습니다.
+
+### 미검증 항목
+
+| 항목 | 상태 |
+| --- | --- |
+| Lab B workflow 실행 기록(Run ID / 149 ms) | 📄 기록값, 재현 안 함 |
+| Standard agent DLP 차단 오류 메시지 | 📄 기록값, 재현 안 함 |
+| agent → flow end-to-end 호출 | ❌ 미확인 |
+| `Respond to the agent` 출력 필드명 | ❌ 미확인(토픽 메시지에서 추론) |
 
 ### 남은 작업
 
