@@ -5,6 +5,16 @@ Copilot Studio는 단독 제품이 아니라 **Power Platform 위의 애플리�
 
 이 문서는 "무엇을 하려면 / 어디에서 / 어떤 역할과 라이선스가 필요한가"를 정리합니다.
 
+## 빠른 찾기
+
+| 목적 | 바로 보기 |
+| --- | --- |
+| Agent나 flow를 만들고 게시 | [3.1 개발](#31-개발-maker) |
+| Analytics, transcript, 실행 이력 조회 | [3.2 운영](#32-운영-operator) |
+| 환경, DLP, capacity 관리 | [3.3 관리·거버넌스](#33-관리거버넌스-admin) |
+| 역할을 최소 권한으로 묶어 부여 | [4. 페르소나별 권장 역할 번들](#4-페르소나별-권장-역할-번들-최소-권한-우선) |
+| `DlpViolationError` 해결 | [6. DLP 심화](#6-dlp-심화-차단된-connector-해제) |
+
 ## 1. 관여하는 플랫폼 지도
 
 | 플랫폼 | URL | 관할 범위 |
@@ -270,7 +280,7 @@ DLP 정책이 `Skills with Copilot Studio` connector를 **Blocked** 그룹에 �
 즉 **Teams/M365 채널 게시와 knowledge source는 허용**돼 있고,
 막히는 것은 **agent → flow(skill) 호출 하나**입니다.
 
-정책 조회 방법은 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)을 참고하세요.
+정책 조회 방법은 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인)을 참고하세요.
 
 ### 6.2 누가 해제할 수 있나
 
@@ -372,11 +382,11 @@ Power Platform 관리 센터
 > 실제로 이 실습 환경의 `Personal Developer - (default)` 정책에서는 Blocked이고,
 > 허용된 채널은 `PvaMicrosoftTeams`(Teams/M365)뿐입니다.
 > "기본값이 그렇다"에 의존하지 말고 정책을 직접 조회해 확인하세요
-> ([`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)).
+> ([`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인)).
 
 ### 6.6 관리자 요청 템플릿
 
-먼저 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)으로
+먼저 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인)으로
 **차단 정책 이름·ID와 기본 분류값을 확인**한 뒤, 그 값을 채워서 보내세요.
 정책 이름 없이 요청하면 관리자가 어느 정책을 봐야 할지 알 수 없습니다.
 
@@ -395,9 +405,6 @@ Note: If the policy sets defaultConnectorsClassification = Blocked, simply
 Business purpose: <용도. 예: deterministic GitHub issue triage; no external connectors>
 Scope: This environment only. No production data is involved.
 ```
-
-이 저장소 실습 환경의 실제 값을 채운 예시는
-[`PORTAL_CREATION_GUIDE.md`의 DLP 절](PORTAL_CREATION_GUIDE.md#dlp-차단-해제-standard-agent-게시-차단-사례)에 있습니다.
 
 ## 7. 트러블슈팅 빠른 참조
 

@@ -1,211 +1,189 @@
 # 검증 방법: 포털 UI 없이 실습 결과 확인하기
 
-이 실습의 결과물은 **포털 화면을 눈으로 보는 것만으로는 정확히 검증되지 않습니다.**
-화면은 표시 이름만 보여주고, 실제로 저장되는 것은 내부 이름과 식(expression)이기 때문입니다.
-
-이 문서는 **읽기 전용 API로 결정적으로 검증하는 방법**을 정리합니다.
-과금이 없고, 리소스를 변경하지 않으며, 스크립트로 반복 가능합니다.
-
-## 왜 API 검증이 필요한가
-
-실제로 이 실습 문서에서 **포털 화면만 보고 놓쳤던 오류**들입니다.
-
-| 놓친 것 | 화면에 보이던 것 | 정의 원본의 실제 값 |
-| --- | --- | --- |
-| Respond 출력 개수 | 라벨 `category` 1줄 | 키 `text` / title `category` — 키와 라벨이 다름 |
-| Lab A 분류 규칙 | 노드 이름 `Category` | security/bug/documentation/feature/question 5분류 완성본 |
-| Lab B 1번 노드 | 정상 노드로 보임 | `@` 누락 → 식이 아니라 **문자열 리터럴** |
-| Agent 이름 | `Simple Issue Triage GitHub Har…` | 말줄임이 아니라 **30자에서 잘린 실제 값** |
-| Workflow 개수 | `2 items` | Dataverse에는 **3개** |
-| 노드 타입 | 팔레트 라벨 `Function` | 저장 타입은 `Compose` |
-
-즉 **표시 계층과 저장 계층이 다릅니다.** 저장 계층을 봐야 합니다.
+포털은 표시 이름만 보여 주므로 내부 이름, 식, 응답 스키마를 놓칠 수 있습니다.
+이 문서는 읽기 전용 API로 agent와 workflow의 저장 정의와 실행 결과를 확인합니다.
+명령은 리소스를 변경하지 않으며 반복 실행할 수 있습니다.
 
 ## 0. 준비
 
-Azure CLI로 로그인하면 별도 설치 없이 세 개의 API를 쓸 수 있습니다.
+Azure CLI에 로그인합니다.
 
 ```bash
 az login
 az account show --query user.name -o tsv
 ```
 
-| API | 리소스 URI | 용도 |
+이 문서에서 사용하는 변수:
+
+| 변수 | 의미 | 설정 위치 |
 | --- | --- | --- |
-| Power Platform BAP | `https://api.bap.microsoft.com/` | 환경 목록, Dataverse URL, DLP 정책 |
-| Power Automate | `https://service.flow.microsoft.com/` | flow 실행 이력 |
-| Dataverse | `https://<org>.crm.dynamics.com` | agent·flow 정의 원본 |
+| `ENV` | 환경 ID | 1장 |
+| `DV` | 환경의 Dataverse URL | 1장에서 자동 설정 |
+| `ID` | 대상 workflow ID | 3장 |
+| `TOK` | 현재 API의 액세스 토큰 | 각 장에서 다시 발급 |
 
-> **아래 예제의 공통 규칙**
-> - 토큰은 **API마다 다릅니다.** 리소스 URI가 바뀌면 `TOK`를 다시 받아야 합니다.
->   각 장의 `az account get-access-token`을 건너뛰면 `401`이 납니다.
-> - `ENV` / `DV` / `ID`는 **같은 셸에서 계속 재사용**합니다.
->   새 터미널을 열었다면 1장부터 다시 실행해 값을 채우세요.
-> - 토큰은 약 1시간 후 만료됩니다. `401`이 나오면 `TOK`만 다시 받으면 됩니다.
-> - 토큰을 파일이나 문서에 붙여 넣지 마세요. 셸 변수로만 다루면 됩니다.
+> 토큰은 API마다 다릅니다. 리소스 URI가 바뀔 때마다 `TOK`를 다시 받으세요.
+> 새 터미널을 열면 `ENV`, `DV`, `ID`도 다시 설정해야 합니다.
+> 토큰을 파일이나 문서에 저장하지 마세요.
 
-이 문서에서 쓰는 변수:
+## 1. 환경과 Dataverse URL 확인
 
-| 변수 | 의미 | 채우는 곳 |
-| --- | --- | --- |
-| `ENV` | 환경 ID | 직접 입력 (Copilot Studio URL 또는 PPAC) |
-| `DV` | 환경의 Dataverse URL | 1장 결과 |
-| `ID` | 대상 workflow ID | 포털 flow URL 또는 3장 |
-| `TOK` | **현재 대상 API**의 액세스 토큰 | 각 장에서 재발급 |
-
-## 1. 환경의 Dataverse URL 찾기
+`<environment-id>`를 Copilot Studio URL이나 PPAC에서 확인한 값으로 바꿉니다.
 
 ```bash
 ENV=<environment-id>
 TOK=$(az account get-access-token --resource "https://api.bap.microsoft.com/" \
       --query accessToken -o tsv)
 
-curl -s -H "Authorization: Bearer $TOK" \
-  "https://api.bap.microsoft.com/providers/Microsoft.BusinessAppPlatform/environments/$ENV?api-version=2020-10-01" \
-| python3 -c "import json,sys; p=json.load(sys.stdin)['properties']; \
+ENV_JSON=$(curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "https://api.bap.microsoft.com/providers/Microsoft.BusinessAppPlatform/environments/${ENV}?api-version=2020-10-01")
+
+printf '%s' "$ENV_JSON" | python3 -c "import json,sys; p=json.load(sys.stdin)['properties']; \
 print(p['displayName'], p['environmentSku'], p['linkedEnvironmentMetadata']['instanceUrl'])"
+
+DV=$(printf '%s' "$ENV_JSON" | python3 -c "import json,sys; \
+print(json.load(sys.stdin)['properties']['linkedEnvironmentMetadata']['instanceUrl'].rstrip('/'))")
 ```
 
-이 실습 환경 결과:
+첫 명령은 환경 이름, 유형, Dataverse URL을 출력합니다. 마지막 명령은 이후 단계에서
+재사용할 `DV`를 자동으로 설정합니다.
 
-```text
-Junwoo Jeong  Developer  https://orgcb421559.crm.dynamics.com/
-```
-
-## 2. Agent(bot) 상태 확인
-
-`publishedon`이 `null`이면 **한 번도 게시되지 않은 것**입니다.
-포털의 `Last published: Never`와 같은 의미입니다.
+## 2. Agent 상태 확인
 
 ```bash
-DV=https://orgcb421559.crm.dynamics.com
 TOK=$(az account get-access-token --resource "$DV" --query accessToken -o tsv)
 
-curl -s -H "Authorization: Bearer $TOK" \
-  "$DV/api/data/v9.2/bots?\$select=name,botid,publishedon,statecode"
+curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "$DV/api/data/v9.2/bots?\$select=name,botid,publishedon,statecode" \
+| python3 -m json.tool
 ```
 
-확인할 것:
+확인 항목:
 
-- `name` — 30자 초과 시 잘렸는지
-- `publishedon` — 게시 여부
-- `botid` — 문서에 기록한 ID와 일치하는지
+- `name`: 의도한 이름으로 저장됐는가
+- `publishedon`: `null`이면 한 번도 게시되지 않음
+- `botid`: 기록한 ID와 일치하는가
 
-## 3. Flow 정의 원본 읽기 (가장 중요)
+## 3. Workflow 정의 원본 확인
 
-`clientdata`에 트리거·액션·식이 **그대로** 들어 있습니다.
+먼저 대상 workflow의 ID를 찾습니다.
+
+```bash
+curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "$DV/api/data/v9.2/workflows?\$select=name,workflowid,statecode&\$filter=contains(name,'Classify Issue')" \
+| python3 -c "
+import json,sys
+for w in json.load(sys.stdin)['value']:
+    print(w['name'], w['workflowid'], w['statecode'])
+"
+```
+
+출력에서 확인할 ID를 선택합니다.
 
 ```bash
 ID=<workflow-id>
-curl -s -H "Authorization: Bearer $TOK" \
-  "$DV/api/data/v9.2/workflows($ID)?\$select=name,clientdata" \
+
+curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "$DV/api/data/v9.2/workflows(${ID})?\$select=name,clientdata" \
 | python3 -c "
 import json,sys
-cd=json.loads(json.load(sys.stdin)['clientdata'])
+row=json.load(sys.stdin)
+cd=json.loads(row['clientdata'])
 d=cd.get('properties',cd).get('definition',cd.get('definition',{}))
+print('WORKFLOW',row['name'])
 for k,v in d.get('triggers',{}).items():
     print('TRIGGER',k,v.get('type'),'kind=',v.get('kind'))
 for k,v in d.get('actions',{}).items():
     print('ACTION ',k,v.get('type'))
-    print('   ',json.dumps(v.get('inputs'),ensure_ascii=False)[:300])
+    print('   ',json.dumps(v.get('inputs'),ensure_ascii=False)[:500])
 "
 ```
 
-여기서 반드시 확인할 것:
+반드시 확인할 내용:
 
-1. **트리거 `kind`** — `Skills`이면 DLP의 `PvaSkills` 커넥터에 의존합니다.
-2. **식의 `@` 접두사** — `@{...}` 또는 `@...`가 없으면 **문자열 리터럴**입니다.
-   Lab B의 1번 노드가 정확히 이 함정에 빠져 있습니다.
-3. **Response 스키마의 `properties` 키와 `title`** — agent가 보는 이름은 `title`입니다.
-4. **`body`의 값이 상수인지 `@{outputs(...)}`인지** — 상수면 계산 결과가 버려집니다.
-5. **`outputs('이름')`의 이름** — 표시 이름이 아니라 **내부 이름**(공백이 `_`)입니다.
+1. 트리거 `kind`가 `Skills`인지
+2. 모든 식이 `@{...}` 또는 `@...`로 시작하는지
+3. Response `properties`의 `title`이 agent에서 사용할 출력 이름과 일치하는지
+4. Response `body`가 상수가 아니라 `@{outputs(...)}`를 반환하는지
+5. `outputs('...')`가 실제 내부 노드 이름을 참조하는지
 
 ## 4. 실행 이력 확인
+
+3장에서 선택한 `ID`를 그대로 사용합니다.
 
 ```bash
 TOK=$(az account get-access-token --resource "https://service.flow.microsoft.com/" \
       --query accessToken -o tsv)
 
-curl -s -H "Authorization: Bearer $TOK" \
-  "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$ENV/flows/$ID/runs?api-version=2016-11-01" \
+curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/${ENV}/flows/${ID}/runs?api-version=2016-11-01" \
 | python3 -c "
 import json,sys
 from datetime import datetime
 for r in json.load(sys.stdin)['value']:
     p=r['properties']
     f='%Y-%m-%dT%H:%M:%S.%f'
-    s=datetime.strptime(p['startTime'][:26],f); e=datetime.strptime(p['endTime'][:26],f)
-    print(r['name'], p['status'], f'{(e-s).total_seconds()*1000:.0f}ms')
+    s=datetime.strptime(p['startTime'][:26],f)
+    e=datetime.strptime(p['endTime'][:26],f)
+    print(r['name'],p['status'],f'{(e-s).total_seconds()*1000:.0f}ms')
 "
 ```
 
-이 방법으로 문서의 Run ID와 소요 시간(123 ms / 149 ms)을 **정확히 재현**했습니다.
-포털 Activity 패널이 응답하지 않아도 실행 이력을 확인할 수 있습니다.
+포털의 Activity 패널이 열리지 않아도 Run ID, 상태, 소요 시간을 확인할 수 있습니다.
 
-## 5. DLP 정책 확인 (차단 원인 규명)
-
-게시 실패의 원인을 **추측하지 않고 확정**할 수 있습니다.
+## 5. DLP 정책 확인
 
 ```bash
 TOK=$(az account get-access-token --resource "https://api.bap.microsoft.com/" \
       --query accessToken -o tsv)
 
-curl -s -H "Authorization: Bearer $TOK" \
+curl -fsS -H "Authorization: Bearer ${TOK}" \
   "https://api.bap.microsoft.com/providers/PowerPlatform.Governance/v2/policies?api-version=2020-10-01" \
   -o policies.json
 ```
 
-적용 정책을 고르는 규칙:
+환경에 적용되는 정책을 찾는 규칙:
 
 | `environmentType` | 적용 조건 |
 | --- | --- |
 | `AllEnvironments` | 항상 적용 |
-| `OnlyEnvironments` | 목록에 대상 환경이 **있으면** 적용 |
-| `ExceptEnvironments` | 목록에 대상 환경이 **없으면** 적용 |
+| `OnlyEnvironments` | 목록에 대상 환경이 있으면 적용 |
+| `ExceptEnvironments` | 목록에 대상 환경이 없으면 적용 |
 
-정책 하나를 골라 상세를 받으면 커넥터 분류를 볼 수 있습니다.
+정책 ID를 찾은 뒤 상세를 확인합니다.
 
 ```bash
-curl -s -H "Authorization: Bearer $TOK" \
-  "https://api.bap.microsoft.com/providers/PowerPlatform.Governance/v2/policies/<policy-id>?api-version=2020-10-01"
+POLICY_ID=<policy-id>
+
+curl -fsS -H "Authorization: Bearer ${TOK}" \
+  "https://api.bap.microsoft.com/providers/PowerPlatform.Governance/v2/policies/${POLICY_ID}?api-version=2020-10-01" \
+| python3 -m json.tool
 ```
 
-이 환경의 확정 결과:
+`defaultConnectorsClassification`과 `PvaSkills`의 분류를 확인하세요.
+해제 절차와 관리자 요청 템플릿은
+[`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)에 있습니다.
 
-```text
-정책        : Personal Developer - (default)
-범위        : ExceptEnvironments (대상 환경이 제외 목록에 없음 → 적용)
-기본 분류   : Blocked
-PvaSkills   : Blocked  ← Skills with Copilot Studio
-```
+## 6. API로 확인할 수 없는 항목
 
-`defaultConnectorsClassification: Blocked`가 핵심입니다.
-**명시적으로 허용하지 않은 모든 커넥터가 차단**되는 정책이며,
-`PvaSkills`는 그 위에 Blocked 그룹에 **명시적으로도** 들어 있습니다.
+| 항목 | 대안 |
+| --- | --- |
+| Flow checker 결과 | 3장의 정의 원본에서 식과 내부 이름 점검 |
+| agent → flow end-to-end 응답 | Test 또는 Preview에서 실제 대화 실행 |
+| DLP 차단 화면의 오류 문구 | 게시 시도 후 포털에서 확인 |
 
-## 6. 아직 API로 확인할 수 없는 것
+## 7. 완료 체크리스트
 
-| 항목 | 이유 | 대안 |
-| --- | --- | --- |
-| Flow checker 결과 | 디자이너 전용 정적 분석, API 없음 | 정의 원본을 직접 읽어 `@` 누락·이름 불일치를 점검 |
-| agent → flow end-to-end 응답 | 실제 대화 실행이 필요 | Standard는 DLP 해제 후 Test 패널, GitHub는 Credits 한도 설정 후 Preview |
-| DLP 차단 시 화면 오류 문구 | UI 문자열 | 게시를 시도해 캡처 (실패해도 리소스 변경 없음) |
-
-## 7. 정리 체크리스트
-
-실습을 마친 뒤 아래를 한 번씩 돌리면 문서와 실제가 어긋나지 않습니다.
-
-- [ ] `bots`의 `name`이 30자에서 잘리지 않았는가
-- [ ] `bots`의 `publishedon`이 기대와 일치하는가
-- [ ] `workflows` 개수가 포털 목록과 일치하는가 (잔여 리소스 확인)
-- [ ] 모든 Compose 입력에 `@` 접두사가 있는가
-- [ ] Response `body`의 값이 상수가 아니라 `@{outputs(...)}`인가
-- [ ] Response `properties`의 `title`이 topic 메시지의 변수명과 일치하는가
-- [ ] flow 실행이 Succeeded이고 소요 시간이 문서와 일치하는가
+- [ ] Agent 이름과 게시 상태가 의도와 일치한다
+- [ ] Workflow 수와 ID가 예상과 일치한다
+- [ ] 모든 식에 `@` 접두사가 있다
+- [ ] Response가 앞 노드의 계산 결과를 반환한다
+- [ ] Response `title`과 agent의 출력 변수 이름이 일치한다
+- [ ] 서로 다른 입력에서 출력이 달라진다
+- [ ] 최근 실행 상태가 `Succeeded`다
 
 ## 관련 문서
 
 - 실습 절차: [`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md)
 - 역할·권한·DLP: [`ROLES_AND_PERMISSIONS.md`](ROLES_AND_PERMISSIONS.md)
-- 개념: [`COPILOT_STUDIO_CONCEPTS.md`](COPILOT_STUDIO_CONCEPTS.md)
-- Harness 비교: [`HARNESS_COMPARISON.md`](HARNESS_COMPARISON.md)
+- 실행 기록: [`ACCOUNT_PERMISSION_INVENTORY.md`](ACCOUNT_PERMISSION_INVENTORY.md)

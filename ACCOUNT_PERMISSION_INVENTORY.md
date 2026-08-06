@@ -4,7 +4,7 @@
 
 이 문서는 **실행 기록**입니다. 대상 계정으로 무엇이 가능한지, 실제로 무엇을
 만들었는지를 남깁니다. 실습 절차는 [`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md),
-현재 진행 상태와 남은 작업은 [`README.md`](README.md)가 기준입니다.
+현재 리소스 상태와 남은 작업은 이 문서가 기준입니다.
 
 > **증거 표기**
 > ✅ = 포털 또는 읽기 전용 API로 재확인
@@ -69,7 +69,7 @@ Type: Developer
 
 > checker가 0 errors를 보고했더라도 이 workflow의 **`@` 접두사 누락은 잡히지
 > 않았습니다.** 문법상 유효한 문자열이기 때문입니다.
-> 상세는 [`PORTAL_CREATION_GUIDE.md`의 B-1](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기)을 참고하세요.
+> 수정할 값은 [`PORTAL_CREATION_GUIDE.md`의 B-1](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기)을 참고하세요.
 
 ### Standard harness agent
 
@@ -244,8 +244,17 @@ Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필
 
 ## 남은 작업
 
-**남은 작업 목록은 [`README.md`의 "남은 작업"](README.md#남은-작업)이 유일한 기준입니다.**
-이 문서에서 중복 관리하지 않습니다.
+| 항목 | 상태 | 해결 방법 |
+| --- | --- | --- |
+| Lab B 첫 Compose의 `@` 누락 수정 | 미해결 | 가이드 B-1의 `Combined text` 식으로 교체 후 재게시 |
+| Lab B Respond를 계산 결과에 연결 | 미해결 | 가이드 B-1의 출력 계약대로 `outputs(...)` 연결 |
+| Standard Response 출력 3개 추가 | 미해결 | `priority`, `summary`, `needsHumanReview` 추가 |
+| Standard `Priority` 노드 추가 | 미해결 | 가이드 A-1의 Priority 식 사용 |
+| Lab B Flow checker 재확인 | 재현 불가 | API가 없어 정의 원본 점검으로 대체 |
+| Agent → flow end-to-end 호출 | 미확인 | DLP 예외 승인 후 Standard Test 패널에서 실행 |
+| `PvaSkills` 테넌트 DLP 예외 | 대기 | [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)의 요청 템플릿 사용 |
+| `Classify Issue - GitHub Harness (API Reference)` 정리 | 미결정 | Dataverse에서 소유 관계와 참조를 확인한 뒤 정리 |
 
-요약하면 tenant DLP에서 `Skills with Copilot Studio` 예외가 승인되어야
-Standard agent 게시와 end-to-end 검증을 진행할 수 있습니다.
+가이드의 목표 상태와 현재 테넌트 상태는 다릅니다. 새로 실습할 때는
+[`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md)의 값만 따르고,
+이 표는 기존 리소스를 정리할 때 사용하세요.
