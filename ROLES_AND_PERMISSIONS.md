@@ -222,8 +222,36 @@ DlpViolationError / BlockedConnector
 원인: agent가 agent flow를 tool로 호출하기 위해 **skill 메커니즘**을 사용하는데,
 DLP 정책이 `Skills with Copilot Studio` connector를 **Blocked** 그룹에 넣어 두었기 때문입니다.
 
-> 정확한 connector 이름은 `Skills`가 아니라 **`Skills with Copilot Studio`** 입니다.
+> 정확한 connector 이름은 `Skills`가 아니라 **`Skills with Copilot Studio`**,
+> 커넥터 ID는 **`PvaSkills`** 입니다.
 > PPAC에서 검색할 때 이 이름을 그대로 사용하세요.
+
+**API로 확인한 실제 사례 (2026-08-06):**
+
+| 항목 | 값 |
+| --- | --- |
+| 정책 이름 | `Personal Developer - (default)` |
+| 범위 | `ExceptEnvironments` — 대상 환경이 제외 목록에 없어 **적용됨** |
+| `defaultConnectorsClassification` | **`Blocked`** |
+| `PvaSkills` 분류 | **Blocked** (명시적으로 등록됨) |
+
+> **두 겹으로 막혀 있습니다.**
+> 기본 분류가 `Blocked`라서 미등록 커넥터는 전부 차단되고,
+> `PvaSkills`는 그 위에 Blocked 그룹에 **명시적으로도** 들어 있습니다.
+> 따라서 "Business로 옮겨 주세요"가 아니라
+> **"허용 그룹(Confidential/General)에 추가해 주세요"** 로 요청해야 합니다.
+
+같은 정책의 Copilot Studio 계열 커넥터 분류:
+
+| 분류 | 커넥터 ID |
+| --- | --- |
+| Blocked | `PvaSkills` · `PvaAuth` · `PvaFacebook` · `PvaOmniChannel` · `PvaCustomDemoMobile` · `CSWhatsappChannel` · `CSSharepointChannel` · `CSAppInsights` |
+| 허용(Confidential) | `shared_microsoftcopilotstudio` · `PvaMicrosoftTeams` · `CSKnowledgeDocs` · `CSKnowledgeSharePoint` · `CSKnowledgePublicSites` |
+
+즉 **Teams/M365 채널 게시와 knowledge source는 허용**돼 있고,
+막히는 것은 **agent → flow(skill) 호출 하나**입니다.
+
+정책 조회 방법은 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)을 참고하세요.
 
 ### 6.2 누가 해제할 수 있나
 
@@ -285,25 +313,39 @@ Power Platform 관리 센터
 
 ### 6.5 Copilot Studio DLP 가상 connector 전체 목록
 
-| 차단하려는 동작 | PPAC의 connector 이름 |
-| --- | --- |
-| skill 사용 (agent → flow 호출) | `Skills with Copilot Studio` |
-| 인증 없는 agent 게시 | `Chat without Microsoft Entra ID authentication in Copilot Studio` |
-| HTTP 요청 사용 | `HTTP` (엔드포인트 필터링 지원) |
-| 문서 knowledge source | `Knowledge source with documents in Copilot Studio` |
-| 공개 웹사이트 knowledge source | `Knowledge source with public websites and data in Copilot Studio` |
-| SharePoint/OneDrive knowledge source | `Knowledge source with SharePoint and OneDrive in Copilot Studio` |
-| Demo/커스텀 웹사이트·모바일 앱 게시 | `Direct Line channels in Copilot Studio` |
-| Teams 및 M365 채널 게시 | `Microsoft Teams + Microsoft 365 Channel in Copilot Studio` |
-| Facebook 채널 게시 | `Facebook channel in Copilot Studio` |
-| SharePoint 채널 게시 | `SharePoint channel in Copilot Studio` |
-| WhatsApp 채널 게시 | `WhatsApp channel in Copilot Studio` |
-| Dynamics 365 Customer Service 채널 게시 | `Omnichannel in Copilot Studio` |
-| Application Insights 연동 | `Application Insights in Copilot Studio` |
-| event trigger·인증 기반 자동 평가 | `Microsoft Copilot Studio` |
+| 차단하려는 동작 | PPAC의 connector 이름 | 커넥터 ID (API) |
+| --- | --- | --- |
+| skill 사용 (agent → flow 호출) | `Skills with Copilot Studio` | `PvaSkills` |
+| 인증 없는 agent 게시 | `Chat without Microsoft Entra ID authentication in Copilot Studio` | `PvaAuth` |
+| HTTP 요청 사용 | `HTTP` (엔드포인트 필터링 지원) | `Http` |
+| 문서 knowledge source | `Knowledge source with documents in Copilot Studio` | `CSKnowledgeDocs` |
+| 공개 웹사이트 knowledge source | `Knowledge source with public websites and data in Copilot Studio` | `CSKnowledgePublicSites` |
+| SharePoint/OneDrive knowledge source | `Knowledge source with SharePoint and OneDrive in Copilot Studio` | `CSKnowledgeSharePoint` |
+| Demo/커스텀 웹사이트·모바일 앱 게시 | `Direct Line channels in Copilot Studio` | `PvaCustomDemoMobile` |
+| Teams 및 M365 채널 게시 | `Microsoft Teams + M365 Channel in Copilot Studio` | `PvaMicrosoftTeams` |
+| Facebook 채널 게시 | `Facebook channel in Copilot Studio` | `PvaFacebook` |
+| SharePoint 채널 게시 | `SharePoint channel in Copilot Studio` | `CSSharepointChannel` |
+| WhatsApp 채널 게시 | `WhatsApp channel in Copilot Studio` | `CSWhatsappChannel` |
+| Dynamics 365 Customer Service 채널 게시 | `Omnichannel in Copilot Studio` | `PvaOmniChannel` |
+| Application Insights 연동 | `Application Insights in Copilot Studio` | `CSAppInsights` |
+| event trigger·인증 기반 자동 평가 | `Microsoft Copilot Studio` | `shared_microsoftcopilotstudio` |
+
+> 커넥터 ID는 2026-08-06에 BAP 정책 API 응답에서 확인한 값입니다.
+> PPAC 화면에서는 표시 이름만 보이지만, API·스크립트로 점검할 때는 ID가 필요합니다.
+>
+> HTTP 계열은 이름이 겹치므로 주의하세요.
+> `Http`(HTTP) · `HttpWebhook` · `HttpRequestReceived`(When a HTTP request is received) ·
+> `shared_webcontentsv2`(HTTP With Microsoft Entra ID)는 모두 별개 커넥터입니다.
+> 이 정책에서 `shared_webcontents`(HTTP with Microsoft Entra ID, preauthorized)만
+> Confidential이고 나머지는 Blocked입니다.
 
 > 어떤 채널도 허용되지 않으면 agent를 **아예 게시할 수 없습니다.**
-> Direct Line 채널은 기본적으로 허용되어 있습니다.
+> Direct Line 채널(`PvaCustomDemoMobile`)은 Microsoft 기본값으로는 허용이지만,
+> **테넌트 정책에서 명시적으로 차단될 수 있습니다.**
+> 실제로 이 실습 환경의 `Personal Developer - (default)` 정책에서는 Blocked이고,
+> 허용된 채널은 `PvaMicrosoftTeams`(Teams/M365)뿐입니다.
+> "기본값이 그렇다"에 의존하지 말고 정책을 직접 조회해 확인하세요
+> ([`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)).
 
 ### 6.6 관리자 요청 템플릿
 

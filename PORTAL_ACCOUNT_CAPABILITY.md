@@ -59,8 +59,13 @@ Agent:
 
 | Name | Bot ID | State |
 | --- | --- | --- |
-| Simple Issue Triage Standard | `bbbb7d70-5fa8-4500-a2a1-d48ff91b71e2` | Draft: DLP blocked |
-| Simple Issue Triage GitHub Harness | `7b3b35af-22a1-49b8-bd4d-a79576f51730` | Published |
+| Simple Issue Triage Standard | `54edb8e6-c490-f111-b8da-000d3a329d3b` | Draft: DLP blocked (`publishedon` = null) |
+| Simple Issue Triage GitHub Har | `4236d9a0-9d6e-42b3-9377-a65e1c188d00` | Published `2026-08-05T11:54:16Z` |
+
+> Bot ID는 2026-08-06에 Dataverse `bots` 테이블에서 재확인했습니다.
+> 이전 기록의 `bbbb7d70…` / `7b3b35af…`는 테이블에 존재하지 않아 정정했습니다.
+> GitHub agent 이름은 **30자 제한으로 잘려** 저장돼 있습니다
+> (입력값 `Simple Issue Triage GitHub Harness`, 저장값 `Simple Issue Triage GitHub Har`).
 
 Native workflow:
 

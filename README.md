@@ -19,6 +19,7 @@ Microsoft Copilot Studio의 개념·기능을 정리하고,
 | 문서 | 내용 |
 | --- | --- |
 | [`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md) | 포털에서 agent와 workflow를 생성하고 연결하는 실습 절차 |
+| [`VERIFICATION.md`](VERIFICATION.md) | 읽기 전용 API로 실습 결과를 결정적으로 검증하는 방법 |
 
 ### 실행 기록
 
@@ -61,39 +62,41 @@ Lab B (GitHub Copilot harness)
 
 기준: 대상 환경 `Junwoo Jeong` (`e477cbf2-150c-eee7-a852-b29ac07f541d`)
 
-✅ = 2026-08-06 포털에서 **직접 재확인** / 📄 = 최초 세션 **기록값**(재현 안 함)
+✅ = 2026-08-06 **포털 또는 읽기 전용 API로 재확인** / 📄 = 기록값(재현 안 함)
 
-| 리소스 | 포털 상태 | 검증 |
+| 리소스 | 상태 | 검증 |
 | --- | --- | --- |
-| `Classify Issue - Standard` (modern workflow) | Published ✅ | Activity 패널에 Succeeded 실행 3건 ✅ (123 / 120 / 141 ms) · 출력은 `category` 1개 ✅ |
-| `Classify Issue - GitHub Harness` (classic workflow) | Published ✅ | checker 0/0, 149 ms 📄 |
-| `Simple Issue Triage GitHub Harness` (agent) | Published ✅ | — |
-| `Simple Issue Triage Standard` (agent) | **Last published: Never** ✅ | 테넌트 DLP가 `Skills with Copilot Studio` connector 차단 📄 |
+| `Classify Issue - Standard` (workflow) | Published ✅ | Succeeded 3건 ✅ (123 / 120 / 141 ms, Flow API) · 출력 1개 ✅ (정의 원본) |
+| `Classify Issue - GitHub Harness` (workflow) | Published ✅ | Succeeded ✅ (149 ms, Flow API) · 출력 4개 ✅ (정의 원본) · checker 0/0 📄 |
+| `Simple Issue Triage GitHub Har` (agent) | Published ✅ | `publishedon` = `2026-08-05T11:54:16Z` ✅ |
+| `Simple Issue Triage Standard` (agent) | Draft ✅ | `publishedon` = `null` ✅ · DLP `PvaSkills` = Blocked ✅ (BAP 정책 API) |
 
 **4종 생성 완료, 3종 게시 완료, 1종 Draft**입니다.
 
-> **실측에서 드러난 불일치**
-> 1. 포털 Workflows 목록은 `Classify Issue - Standard`를 **modern workflow**,
->    `Classify Issue - GitHub Harness`를 **classic workflow**로 분류합니다.
->    이름이 가리키는 harness와 목록상 분류가 반대로 보입니다.
->    다만 `Classify Issue - Standard`의 **노드 구성은 가이드 A-1과 정확히 일치**합니다.
-> 2. `Respond to the agent 2` 노드의 **출력은 `category` 하나뿐**입니다.
->    문서가 가정하던 `priority` / `summary` / `needsHumanReview`는 존재하지 않습니다.
-> 3. modern 디자이너에는 `Data Operation → Compose`도, **Flow checker**도 없습니다.
->    액션은 **Function** 노드로 추가하고 함수 선택기에서 종류를 고릅니다.
+> **API 실측에서 드러난 사실**
+> 1. `Respond to the agent 2`의 출력은 **1개**입니다.
+>    저장된 **키는 `text`**, agent에 보이는 **이름(title)은 `category`** 로 서로 다릅니다.
+> 2. Lab A의 `Category` 노드에는 이미 **5분류 규칙이 완성**돼 있습니다.
+>    스모크 테스트가 아니라 동작하는 분류기입니다.
+> 3. Lab B의 첫 Compose는 **`@` 접두사가 빠져** 식이 아니라 문자열로 저장돼 있습니다.
+>    결과적으로 분류 조건이 항상 거짓이며, Respond가 값을 상수로 반환해 가려져 있습니다.
+> 4. Agent 이름은 **30자에서 잘립니다.** 포털의 `…`는 UI 말줄임이 아니라 실제 저장값입니다.
+> 5. Dataverse에는 `Classify Issue*` workflow가 **3개** 있습니다(포털 목록은 2개).
+> 6. 두 flow 모두 Dataverse `category: 5`(Modern Flow)입니다.
+>    포털의 modern/classic 구분은 **UI 표시 수준**입니다.
 >
-> 자세한 내용은 실습 가이드의 "현재 리소스 상태"를 참고하세요.
-
-두 flow는 포털 연결과 응답 경로를 검증하는 **스모크 테스트 구성**입니다.
-운영용 분류 규칙은 실습 가이드의 "확장: 운영용 분류 규칙"을 기준으로 추가합니다.
+> 검증 방법은 [`VERIFICATION.md`](VERIFICATION.md)에, 항목별 대조표는
+> 실습 가이드의 "실측으로 정정된 항목"에 있습니다.
 
 ### 남은 작업
 
-1. `Respond to the agent 2`에 `priority` / `summary` / `needsHumanReview` 출력 추가
-2. GitHub agent Preview에서 workflow end-to-end 호출 확인 (❌ 미확인)
-3. `Skills with Copilot Studio` connector에 대한 테넌트 DLP 예외 승인
-4. 예외 승인 후 Standard agent 게시 및 end-to-end 확인
-5. 두 flow의 이름을 실제 형식(modern / classic)에 맞게 정리
+| 항목 | 상태 | 해결 방법 |
+| --- | --- | --- |
+| Lab B 첫 Compose의 `@` 누락 수정 | 미해결 | 디자이너에서 식 앞에 `@` 추가 후 재게시 |
+| `Respond to the agent 2`에 출력 3개 추가 | 미해결 | 실습 가이드 A-1의 출력 추가 표 참고 |
+| Lab B Flow checker 0/0 재확인 | 재현 불가 | API 없음. 정의 원본 점검으로 대체 |
+| agent → flow end-to-end 호출 | 미확인 | DLP 예외 승인 후 Standard agent Test 패널 (Preview는 Credits 소모) |
+| `PvaSkills` 테넌트 DLP 예외 승인 | 대기 | `ROLES_AND_PERMISSIONS.md` §6의 요청 템플릿 사용 |
 
 ## 범위
 

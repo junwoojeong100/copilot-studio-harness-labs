@@ -131,66 +131,106 @@ to the Standard harness agent.
 | 2 | `Category` | 결합 문자열로 카테고리 판정 |
 | 3 | `Respond to the agent 2` | 결과를 호출한 agent에 동기 반환 |
 
-> **디자이너에 따라 추가 방법이 다릅니다**
-> 이 flow가 열리는 **modern workflow 디자이너**의 노드 팔레트는
-> Agent · Classify · M365 Copilot · Human review · Connector ·
-> **Function** · Variable · If/Else · Loop · Note 입니다.
-> 여기에는 `Data Operation → Compose`가 **없습니다**.
-> 각 액션 노드는 내부적으로 `builtinFunction` 타입이고,
-> 노드 구성 패널에 `Select function, currently ...` 선택기가 있습니다.
-> 즉 modern 디자이너에서는 **Function** 노드를 추가한 뒤
-> 원하는 함수(`Respond to the agent` 등)를 고르는 방식입니다.
-> classic(Power Automate 계열) 디자이너에서 열릴 때만
-> `Data Operation → Compose`를 사용합니다.
-
-`Combined text` 입력 구성:
-
-두 trigger 입력을 하나의 문자열로 합칩니다.
-modern 디자이너의 값 입력란은 **토큰 입력 필드**입니다.
-오른쪽 **번개 아이콘(Insert dynamic content)** 으로 trigger 입력 토큰을 차례로 삽입하세요.
-문자열을 직접 타이핑하는 것보다 안전합니다.
-
-`Category` 입력 구성(스모크 테스트용 최소 규칙):
-
-앞 노드(`Combined text`)의 출력 토큰을 삽입한 뒤,
-`503` 포함 여부로 `bug` / `question`을 판정하는 조건을 구성합니다.
-
-> **`outputs('노드이름')` 문법은 classic 디자이너 전용입니다.**
-> modern 디자이너에서 앞 노드 값은 **토큰 칩**으로 표현되며,
-> 실측한 `Respond to the agent 2`의 값도 `Output` 토큰 칩이었습니다.
-> classic 디자이너(Lab B)에서는 아래처럼 씁니다.
+> **노드 종류 (flow 정의 원본 기준)**
+> Dataverse `workflow.clientdata`에서 확인한 실제 액션 타입은 다음과 같습니다.
 >
-> ```text
-> if(contains(outputs('<결합 노드의 내부 이름>'), '503'), 'bug', 'question')
-> ```
+> | 표시 이름 | 내부 이름 | 액션 타입 |
+> | --- | --- | --- |
+> | `Combined text` | `Combined_text` | `Compose` |
+> | `Category` | `Category` | `Compose` |
+> | `Respond to the agent 2` | `Respond_to_the_agent_2` | `Response` |
 >
-> classic에서는 **표시 이름과 내부 이름이 다릅니다.**
-> B-1의 검증된 workflow에서 결합 노드의 내부 이름은 `Compose`였습니다.
-> 이름이 틀리면 `outputs('...')`가 null이 됩니다.
+> 즉 modern 디자이너에서도 내부 액션은 **`Compose`** 입니다.
+> 캔버스 DOM에 보이는 `builtinFunction-...`은 **액션 타입이 아니라 캔버스 요소 ID**입니다.
+> 팔레트 라벨(Function 등)은 UI 표현이고, 저장되는 정의는 Power Automate와 같은
+> `Compose` / `Response` 스키마를 씁니다.
+
+Trigger 정의(원본):
+
+```text
+kind: Skills          ← DLP의 "Skills with Copilot Studio" 커넥터를 사용하는 이유
+type: Request
+inputs: text (title "Text"), text_1 (title "Text 1")
+```
+
+`Combined text` 입력식(원본 그대로):
+
+```text
+@{toLower(concat(triggerBody()?['text'], ' ', triggerBody()?['text_1']))}
+```
+
+`toLower()`가 중요합니다. 아래 분류 규칙의 키워드가 모두 소문자이기 때문입니다.
+
+`Category` 입력식(원본 그대로, 4단 중첩 `if`):
+
+```text
+@{if(or(contains(outputs('Combined_text'),'security'),
+        contains(outputs('Combined_text'),'token'),
+        contains(outputs('Combined_text'),'vulnerability')),'security',
+   if(or(contains(outputs('Combined_text'),'bug'),
+        contains(outputs('Combined_text'),'error'),
+        contains(outputs('Combined_text'),'fail'),
+        contains(outputs('Combined_text'),'crash'),
+        contains(outputs('Combined_text'),'500'),
+        contains(outputs('Combined_text'),'503')),'bug',
+   if(or(contains(outputs('Combined_text'),'doc'),
+        contains(outputs('Combined_text'),'guide'),
+        contains(outputs('Combined_text'),'quickstart'),
+        contains(outputs('Combined_text'),'typo')),'documentation',
+   if(or(contains(outputs('Combined_text'),'feature'),
+        contains(outputs('Combined_text'),'request'),
+        contains(outputs('Combined_text'),'enhancement')),'feature',
+   'question'))))}
+```
+
+> 실제 정의는 한 줄입니다. 위는 가독성을 위해 줄바꿈만 넣은 것입니다.
+> `outputs('Combined_text')`는 **표시 이름이 아니라 내부 이름**을 참조합니다
+> (공백이 `_`로 치환됨). 이름이 틀리면 `outputs('...')`가 null이 됩니다.
+
+> **Lab A는 스모크 테스트가 아니라 이미 완성된 분류기입니다.**
+> `Category` 노드가 security / bug / documentation / feature / question
+> **5개 분류를 모두 구현**하고 있습니다.
+> 뒤의 "확장: 운영용 분류 규칙"에서 Category 부분은 Lab A에 이미 반영돼 있고,
+> **Priority 규칙만 미구현**입니다.
 
 `Respond to the agent` 출력 계약:
 
-노드 구성 패널에서 **`Add an output`** 으로 아래 네 개를 만들고,
-각 값에 앞 노드의 결과 토큰 또는 상수를 지정합니다.
+**실제 정의(원본)** — 출력은 **1개**입니다.
 
-| 출력 이름 | 형식 | 값 |
+```json
+{
+  "schema": {
+    "type": "object",
+    "properties": {
+      "text": { "title": "category", "type": "string" }
+    },
+    "required": ["text"]
+  },
+  "body": { "text": "@{outputs('Category')}" }
+}
+```
+
+| 항목 | 값 |
+| --- | --- |
+| JSON 키 | `text` |
+| agent에 보이는 이름(title) | `category` |
+| 값 | `@{outputs('Category')}` — **고정값이 아니라 실제 계산 결과** |
+| 필수 | 예 |
+
+> **키(`text`)와 라벨(`category`)이 다릅니다.**
+> 포털 UI에서 필드를 추가하면 키는 타입 기본값(`text`)으로 잡히고,
+> 입력한 이름은 `title`로 저장됩니다. agent가 참조하는 이름은 **`title`** 입니다.
+
+`priority` / `summary` / `needsHumanReview`를 쓰려면
+노드 구성 패널에서 **`Add an output`** 으로 세 개를 추가하세요.
+추가한 이름은 A-2의 topic 메시지와 **정확히 일치**해야 합니다.
+
+| 출력 이름 | 형식 | 현재 |
 | --- | --- | --- |
-| `category` | Text | `Category` 노드 출력 토큰 |
-| `priority` | Text | 스모크 테스트에서는 상수 (`P0` 등) |
-| `summary` | Text | 스모크 테스트에서는 상수 |
-| `needsHumanReview` | Boolean | 스모크 테스트에서는 상수 |
-
-이 네 이름은 A-2의 topic 메시지와 **정확히 일치**해야 합니다.
-
-> **⚠️ 이 환경에 이미 있는 flow는 출력이 `category` 하나뿐입니다 (실측)**
-> `Respond to the agent 2` 노드 구성 패널에서 직접 확인한 내용:
-> - 설명: `Respond to the calling agent with typed outputs.`
-> - **Outputs**: `category` 1개, 값은 `Output` 토큰 칩
-> - 하단 안내: `Add the typed fields the workflow returns to the agent.`
->
-> 기존 flow를 **그대로 재사용**한다면 `Add an output`으로 세 개를 추가하거나,
-> A-2의 topic 메시지를 `Category: {category}` 한 줄로 줄여야 합니다.
-> 줄이지 않으면 나머지 세 값이 빈칸으로 출력됩니다.
+| `category` | Text | ✅ 존재 (`Category` 노드 출력과 연결됨) |
+| `priority` | Text | ❌ 미생성 |
+| `summary` | Text | ❌ 미생성 |
+| `needsHumanReview` | Boolean | ❌ 미생성 |
 
 ### 필수 설정
 
@@ -209,7 +249,11 @@ Undo · Redo · Version history · **Save** · **Test** · **Publish**.
 4. **Activity** 탭에서 실행 이력(상태·소요 시간)을 확인합니다.
 
 > classic workflow 디자이너에서 열린 경우에는 **Flow checker**와
-> **Run flow test**를 사용합니다. modern 디자이너에는 Flow checker가 없습니다.
+> **Run flow test**를 사용합니다.
+> modern 디자이너 툴바에서는 Flow checker 버튼을 확인하지 못했습니다(2026-08-06 관찰).
+> Flow checker 결과는 API로 조회할 수 없으므로,
+> 정적 점검이 필요하면 [`VERIFICATION.md` 3장](VERIFICATION.md#3-flow-정의-원본-읽기-가장-중요)의
+> 정의 원본 점검으로 대체하세요.
 
 테스트 입력:
 
@@ -376,50 +420,50 @@ Copilot harness agent.
 
 ### Node 구성
 
-현재 활성 workflow는 포털 expression 편집 복잡도를 줄이고
-agent-to-workflow 연결을 빠르게 검증하기 위한 **최소 스모크 테스트 프로필**입니다.
+**flow 정의 원본에서 확인한 실제 구성**입니다. 내부 이름은 모두 `Compose*`입니다.
 
-| 순서 | Node | 역할 |
-| --- | --- | --- |
-| 1 | `Combined text` (Compose) | 두 입력 결합 |
-| 2 | `Category` (Compose) | 카테고리 판정식 |
-| 3 | `Priority` (Compose) | 우선순위 값 |
-| 4 | `Summary` (Compose) | 요약 문자열 |
-| 5 | `Respond to the agent` | 구조화 응답 반환 |
+| 순서 | 내부 이름 | 타입 | 입력값 |
+| --- | --- | --- | --- |
+| 1 | `Compose` | Compose | `toLower(concat(triggerBody()?['text'], ' ', triggerBody()?['text_1']))` |
+| 2 | `Compose_1` | Compose | `@if(contains(outputs('Compose'),'503'),'bug','question')` |
+| 3 | `Compose_2` | Compose | `P0` |
+| 4 | `Compose_3` | Compose | `Classified as bug with priority P0.` |
+| 5 | `Respond_to_the_agent` | Response | 아래 출력 계약 |
 
-Category 식(이 환경에서 실제 확인된 식):
+> **⚠️ 이 workflow에는 실제 버그가 있습니다 — 따라 만들 때 주의하세요**
+> 1번 `Compose`의 입력값에 **`@` 접두사가 없습니다.**
+> 따라서 식으로 평가되지 않고 `toLower(concat(...))`라는 **문자열 리터럴**이
+> 그대로 출력됩니다.
+> 그 결과 2번의 `contains(outputs('Compose'),'503')`은 **항상 false**가 되어
+> `Compose_1`은 언제나 `question`을 반환합니다.
+>
+> 그런데도 실행이 성공하는 이유는 **Respond 노드가 모든 값을 고정 상수로
+> 반환**하기 때문입니다. 즉 계산 결과가 응답에 전혀 반영되지 않습니다.
+>
+> 올바른 형태는 Lab A처럼 `@{...}`로 감싸는 것입니다.
+> ```text
+> @{toLower(concat(triggerBody()?['text'], ' ', triggerBody()?['text_1']))}
+> ```
 
-```text
-if(contains(outputs('Compose'), '503'), 'bug', 'question')
-```
+출력 계약(원본):
 
-> 여기서 `Compose`는 1번 노드의 **내부 이름**입니다.
-> 표시 이름 `Combined text`와 다르다는 점에 주의하세요.
+| JSON 키 | agent에 보이는 이름(title) | 형식 | 현재 값 |
+| --- | --- | --- | --- |
+| `category` | `category` | Text | `bug` (고정) |
+| `priority` | `priority` | Text | `P0` (고정) |
+| `summary` | `summary` | Text | `Classified as bug with priority P0.` (고정) |
+| `needshumanreview` | `needsHumanReview` | Boolean | `true` (고정) |
 
-출력 계약:
-
-| 출력 | 형식 |
-| --- | --- |
-| `category` | Text |
-| `priority` | Text |
-| `summary` | Text |
-| `needsHumanReview` | Boolean |
+> `needsHumanReview`는 **키가 전부 소문자(`needshumanreview`)** 로 저장돼 있습니다.
+> agent가 참조하는 이름은 `title`인 `needsHumanReview`입니다.
 
 > **현재 구성의 한계 (반드시 인지할 것)**
-> 현재 게시된 버전은 **Respond 노드의 값이 고정 상수**입니다.
-> 즉 위 Category 식의 계산 결과가 실제 응답에 반영되지 않습니다.
->
-> | Respond 출력 | 현재 값 |
-> | --- | --- |
-> | `category` | `bug` (고정) |
-> | `priority` | `P0` (고정) |
-> | `summary` | `Classified as bug with priority P0.` (고정) |
-> | `needsHumanReview` | `true` (고정) |
->
-> 이는 **호출 → 구조화 응답 → 게시 → 실행 경로를 검증**하기 위한 의도적 구성입니다.
-> 따라서 이 workflow는 범용 분류기가 **아닙니다**.
-> 범용 분류기로 확장하려면 Respond 출력의 각 값을 고정 문자열 대신
-> `outputs('Category')`처럼 앞선 Compose 노드 결과로 바꾸면 됩니다.
+> Respond 노드의 값이 전부 고정 상수이므로,
+> `Compose_1`~`Compose_3`의 계산 결과는 응답에 **반영되지 않습니다**.
+> 이는 **호출 → 구조화 응답 → 게시 → 실행 경로를 검증**하기 위한 구성이며,
+> 이 workflow는 범용 분류기가 **아닙니다**.
+> 범용 분류기로 만들려면 (a) 1번 노드에 `@{}`를 적용하고,
+> (b) Respond의 각 값을 `@{outputs('Compose_1')}`처럼 앞 노드 결과로 바꿔야 합니다.
 
 ### 게시와 테스트
 
@@ -445,6 +489,11 @@ Status:      Succeeded
 Flow checker: 0 errors, 0 warnings
 Outputs: bug / P0 / Classified as bug with priority P0. / true
 ```
+
+> Run ID·Duration·Status는 Flow API로 재확인했습니다(✅).
+> `Flow checker: 0/0`은 최초 세션 기록값이며 API로 조회할 수 없습니다(📄).
+> 참고로 checker가 0 errors를 보고했더라도 위의 **`@` 누락은 잡히지 않습니다.**
+> 문법상 유효한 문자열이기 때문입니다. checker 통과가 정확성을 보장하지 않습니다.
 
 ## B-2. Agent 만들기
 
@@ -509,10 +558,10 @@ It returns category, priority, summary, and needsHumanReview.
 ## 테스트 입력과 기대 결과
 
 > **표기 규칙**
-> ✅ = 2026-08-06 포털에서 **직접 재확인**한 값
-> 📄 = 최초 실습 세션의 **기록값**(이번에 재현하지 않음)
+> ✅ = 2026-08-06에 **직접 재확인**한 값 (포털 UI 또는 Dataverse/Flow API)
+> 📄 = 최초 실습 세션의 기록값 중 재현하지 못한 값
 
-### Lab A: Standard flow 스모크 테스트
+### Lab A: Standard flow 실행 확인
 
 ```text
 Text:   Login fails
@@ -521,27 +570,29 @@ Text 1: 503 error
 
 | 항목 | 결과 | 검증 |
 | --- | --- | --- |
-| Run ID | `08584156703223952675185929598CU03` | 📄 |
-| Duration | 123 ms | ✅ |
+| Run ID | `08584156703223952675185929598CU03` | ✅ Flow API |
+| Duration | 123 ms (13:29:23.1434 → .2661 = 122.7 ms) | ✅ Flow API |
 | Status | Succeeded | ✅ |
-| 응답 출력 | `category` 1개 (`priority`·`summary`·`needsHumanReview` 없음) | ✅ |
+| 응답 출력 | `category` 1개, 값 `@{outputs('Category')}` | ✅ 정의 원본 |
 
-포털 **Activity** 패널에서 실제로 확인한 실행 3건:
+Flow API로 조회한 전체 실행 이력(3건, 모두 Succeeded):
 
-| 시각 | Duration | Status |
+| Run ID | 시각 (UTC) | Duration |
 | --- | --- | --- |
-| 8/5 10:29 PM | 123 ms | Succeeded ✅ |
-| 8/5 8:54 PM | 120 ms | Succeeded ✅ |
-| 8/5 8:50 PM | 141 ms | Succeeded ✅ |
+| `…598CU03` | 2026-08-05T13:29:23Z | 123 ms |
+| `…077CU03` | 2026-08-05T11:54:53Z | 120 ms |
+| `…026CU20` | 2026-08-05T11:50:18Z | 141 ms |
 
-### Lab B: GitHub workflow 스모크 테스트
+포털 Activity 패널의 3건(123 / 120 / 141 ms)과 **정확히 일치**합니다.
+
+### Lab B: GitHub workflow 실행 확인
 
 ```text
 Text:   503 error
 Text 1: urgent
 ```
 
-기대 응답 계약(현재 고정값):
+응답 계약(전부 고정값):
 
 ```text
 category         = bug
@@ -552,20 +603,21 @@ needsHumanReview = true
 
 | 항목 | 결과 | 검증 |
 | --- | --- | --- |
-| Run ID | `08584156712497958263468546463CU12` | 📄 |
-| Duration | 149 ms | 📄 |
-| Status | Succeeded | 📄 |
-| Flow checker | 0 errors, 0 warnings | 📄 |
+| Run ID | `08584156712497958263468546463CU12` | ✅ Flow API |
+| Duration | 149 ms (13:13:55.6961 → .8453 = 149.2 ms) | ✅ Flow API |
+| Status | Succeeded | ✅ |
+| 실행 건수 | 2건, 모두 Succeeded | ✅ |
+| Flow checker 0/0 | — | 📄 (checker 결과는 API로 조회 불가) |
 
-> Lab B의 flow는 **classic workflow**여서 별도 탭(Power Automate 계열 디자이너)에서
-> 열립니다. 이번 재확인에서는 목록의 **Published** 상태까지만 검증했고,
-> 실행 기록은 재현하지 않았습니다.
 
 ## 확장: 운영용 분류 규칙
 
-스모크 테스트를 실제 분류기로 확장할 때 사용할 규칙입니다.
-판정 노드에서 아래 규칙을 구현하고, 결과를 Respond 출력에 연결하세요.
-(modern 디자이너는 **Function** 노드, classic 디자이너는 **Compose** 노드입니다.)
+> **어디까지 되어 있나**
+> Lab A의 `Category` 노드에는 아래 **Category 규칙이 이미 구현**돼 있습니다.
+> 비어 있는 것은 **Priority**와 나머지 출력 3개(`priority` / `summary` / `needsHumanReview`)입니다.
+> Lab B는 계산 결과를 쓰지 않고 Respond에서 고정값을 반환하므로 규칙 전체를 새로 연결해야 합니다.
+
+판정 노드(`Compose`)에서 아래 규칙을 구현하고, 결과를 Respond 출력에 연결하세요.
 
 | 분류 | 규칙 |
 | --- | --- |
@@ -613,23 +665,40 @@ needsHumanReview = false
 
 ## 현재 리소스 상태
 
-아래는 **2026-08-06 포털에서 직접 확인**한 상태입니다.
+아래는 **2026-08-06에 포털과 읽기 전용 API로 확인**한 상태입니다.
+조회 방법은 [`VERIFICATION.md`](VERIFICATION.md)를 참고하세요.
 
 환경: `Junwoo Jeong` / `e477cbf2-150c-eee7-a852-b29ac07f541d`
 
-### Agents 페이지 (실측)
+### Agents (Dataverse `bots` 테이블 실측)
 
-| Name | Type | Last published | Owner |
+| Name (저장된 값) | Bot ID | publishedon |
+| --- | --- | --- |
+| `Simple Issue Triage Standard` | `54edb8e6-c490-f111-b8da-000d3a329d3b` | **null** (= 한 번도 게시 안 됨) |
+| `Simple Issue Triage GitHub Har` | `4236d9a0-9d6e-42b3-9377-a65e1c188d00` | `2026-08-05T11:54:16Z` |
+
+> **agent 이름은 30자에서 잘립니다.**
+> `Simple Issue Triage GitHub Harness`(34자)를 입력했지만
+> Dataverse에는 `Simple Issue Triage GitHub Har`(30자)로 저장돼 있습니다.
+> 포털 목록의 `…`는 UI 말줄임이 아니라 **실제로 잘린 이름**입니다.
+> 이름을 30자 이내로 정하세요. 예: `Simple Issue Triage GitHub`(26자).
+
+### Workflows (Dataverse `workflows` 테이블 실측)
+
+| Name | Workflow ID | category | statecode |
 | --- | --- | --- | --- |
-| `Simple Issue Triage Standard` | Agent | **Never** (= Draft) | Junwoo Jeong |
-| `Simple Issue Triage GitHub Har…` | Agent | 게시됨 | Junwoo Jeong |
+| `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | 5 (Modern Flow) | 1 (Activated) |
+| `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | 5 (Modern Flow) | 1 (Activated) |
+| `Classify Issue - GitHub Harness (API Reference)` | `48ed52fb-bc90-f111-b8da-000d3a329d3b` | 5 (Modern Flow) | 1 (Activated) |
 
-### Workflows 페이지 (실측, `2 items`)
+> **Dataverse에는 3개, 포털 Workflows 목록에는 2개만 보입니다.**
+> `… (API Reference)`는 목록에 노출되지 않습니다.
+> 실습 중 만든 잔여 리소스가 목록에서 안 보일 수 있으니,
+> 정리할 때는 Dataverse 기준으로 확인하세요.
 
-| Name | 종류 | Status | Enabled |
-| --- | --- | --- | --- |
-| `Classify Issue - Standard` | **modern workflow** (포털 내 디자이너) | Published | On |
-| `Classify Issue - GitHub Harness` | **classic workflow** (새 탭에서 열림) | Published | On |
+> **Dataverse category는 셋 다 `5`(Modern Flow)로 동일합니다.**
+> 포털이 표시하는 **modern / classic** 구분은 Dataverse 값이 아니라
+> **Copilot Studio UI 레벨의 구분**입니다.
 
 ### `Classify Issue - Standard` 디자이너 (실측)
 
@@ -638,44 +707,54 @@ needsHumanReview = false
 - 탭: **Build / Activity / Monitor**
 - 노드 구성:
   `When an agent calls the flow` → `Combined text` → `Category` → `Respond to the agent 2`
-- 노드 팔레트: Agent · Classify · M365 Copilot · Human review · Connector ·
+- 노드 팔레트(UI 라벨): Agent · Classify · M365 Copilot · Human review · Connector ·
   Function · Variable · If/Else · Loop · Note
+  (저장되는 액션 타입은 `Compose` / `Response`)
 
-> **⚠️ 이름과 실제 아티팩트 형식이 어긋납니다**
+> **⚠️ 이름과 포털 표시 형식이 어긋납니다**
 > 포털 Workflows 목록은
 > `Classify Issue - Standard`를 **modern workflow**(포털 내 디자이너에서 열림),
-> `Classify Issue - GitHub Harness`를 **classic workflow**(새 탭에서 열림)로 분류합니다.
-> 이름이 가리키는 harness와 목록상 분류가 반대로 보입니다.
-> 다시 만들 때는 이름을 실제 형식에 맞게 정하세요.
+> `Classify Issue - GitHub Harness`를 **classic workflow**(새 탭에서 열림)로 표시합니다.
+> 이름이 가리키는 harness와 표시 형식이 반대로 보입니다.
+> 다만 정의 원본에서 두 flow는 **같은 스키마**(Request/Skills 트리거 +
+> Compose + Response)를 쓰고 Dataverse category도 동일합니다.
+> 실질 차이는 **디자이너 UI**뿐입니다.
 >
-> 반면 **노드 구성은 이 문서의 A-1 설명과 정확히 일치**합니다
+> 노드 구성은 이 문서의 A-1 설명과 일치합니다
 > (`Combined text` → `Category` → `Respond to the agent 2`).
-> 즉 A-1 절차 자체는 실제 리소스와 어긋나지 않습니다.
 
 ### 미검증 항목
 
-| 항목 | 상태 |
-| --- | --- |
-| Lab B workflow 실행 기록(Run ID / 149 ms) | 📄 기록값, 재현 안 함 |
-| Standard agent DLP 차단 오류 메시지 | 📄 기록값, 재현 안 함 |
-| agent → flow end-to-end 호출 | ❌ 미확인 |
+| 항목 | 상태 | 해결 방법 |
+| --- | --- | --- |
+| Lab B Flow checker 0 errors / 0 warnings | 📄 | checker 결과를 노출하는 API가 없음. [`VERIFICATION.md` 3장](VERIFICATION.md#3-flow-정의-원본-읽기-가장-중요)의 정의 원본 점검으로 대체 |
+| agent → flow end-to-end 호출 | ❌ | Standard는 DLP 예외 승인 후 **Test 패널**(게시 전, 무료)로 확인. GitHub harness Preview는 Copilot Credits를 소모하므로 PPAC에서 agent별 한도를 먼저 설정 |
+
+나머지 항목은 모두 읽기 전용 API로 재확인했습니다.
+재현 절차는 [`VERIFICATION.md`](VERIFICATION.md)에 있습니다.
 
 ### 실측으로 정정된 항목
 
-| 항목 | 문서에 있던 내용 | 실제 |
+| 항목 | 문서에 있던 내용 | 실제 (정의 원본 기준) |
 | --- | --- | --- |
-| `Respond to the agent 2` 출력 | `category`·`priority`·`summary`·`needsHumanReview` 4개 | **`category` 1개만 존재** |
-| Action 추가 경로 | `Data Operation → Compose` | modern 디자이너는 **Function** 노드 + 함수 선택기 |
-| 검증 도구 | Flow checker | modern 디자이너에는 없음(Save/Test/Publish + Activity) |
+| Lab A Respond 출력 | 4개 | **1개** (키 `text`, title `category`) |
+| Lab A Category 규칙 | `503` 판정만 하는 스모크 식 | **security/bug/documentation/feature/question 5분류 완성본** |
+| Lab A 노드 타입 | (한때) `builtinFunction` / Function | **`Compose`** — `builtinFunction-*`은 캔버스 요소 ID였음 |
+| Lab B 노드 표시 이름 | `Combined text`/`Category`/`Priority`/`Summary` | 내부 이름은 `Compose`/`Compose_1`/`Compose_2`/`Compose_3` |
+| Lab B 1번 노드 | 정상 결합식 | **`@` 누락으로 문자열 리터럴** → 판정식이 항상 false |
+| Agent Bot ID | `bbbb7d70…` / `7b3b35af…` | `54edb8e6-c490-f111-b8da-000d3a329d3b` / `4236d9a0-9d6e-42b3-9377-a65e1c188d00` |
+| Agent 이름 | `Simple Issue Triage GitHub Harness` (34자) | **30자로 잘림**: `Simple Issue Triage GitHub Har` |
+| Workflows 개수 | 2개 | Dataverse에는 **3개** (`… (API Reference)` 포함, 포털 목록엔 미표시) |
 
 ### 남은 작업
 
-1. `Classify Issue - Standard`의 `Respond to the agent 2`에
+1. Lab B 첫 `Compose`의 **`@` 누락 수정** 후 재게시 (현재 판정식이 항상 false)
+2. `Classify Issue - Standard`의 `Respond to the agent 2`에
    `priority` / `summary` / `needsHumanReview` 출력 추가
-2. GitHub agent Preview에서 workflow end-to-end 호출 확인
-3. `Skills with Copilot Studio` connector에 대한 DLP 예외 승인 요청
-4. 예외 승인 후 Standard agent 게시 및 end-to-end 호출 확인
-5. 두 flow의 이름을 실제 형식(modern / classic)에 맞게 정리
+3. `Skills with Copilot Studio`(`PvaSkills`)에 대한 DLP 예외 승인 요청
+4. 예외 승인 후 Standard agent 게시 및 **Test 패널**에서 end-to-end 호출 확인
+   (GitHub harness Preview는 Copilot Credits를 소모하므로 나중에)
+5. Dataverse에만 남아 있는 `Classify Issue - GitHub Harness (API Reference)` 정리 여부 결정
 
 ## 트러블슈팅
 
@@ -685,8 +764,10 @@ needsHumanReview = false
 | agent가 flow 결과를 기다리지 않음 | Asynchronous response가 On | flow trigger에서 **Off**로 변경 |
 | `DlpViolationError / BlockedConnector` | DLP가 connector 차단 | 아래 DLP 절 참고 |
 | 게시 버튼은 되는데 채널이 없음 | 채널 connector가 DLP에서 차단 | PPAC → Data policy 확인 |
-| `outputs('...')`가 null | classic 디자이너에서 노드 내부 이름 불일치 | 포털의 **실제 내부 이름**으로 식 수정 |
-| modern 디자이너에 `Compose`/`Flow checker`가 없음 | 정상 (modern에는 없는 기능) | **Function** 노드 + `Test`/`Activity` 사용 |
+| `outputs('...')`가 null | 노드 **내부 이름**이 아니라 표시 이름을 씀 | 정의 원본에서 실제 내부 이름 확인 후 식 수정 |
+| 식이 계산되지 않고 그대로 출력됨 | 식 앞에 **`@` 접두사가 없음** (문자열 리터럴) | `@{...}` 또는 `@...`로 수정 (Lab B 1번 노드의 실제 결함) |
+| agent가 출력 변수를 못 찾음 | Respond의 **키와 title이 다름** | agent가 보는 이름은 **title**입니다. title 기준으로 참조 |
+| modern 디자이너에서 Flow checker를 못 찾음 | modern 툴바에 해당 버튼이 없음 | `Test`/`Activity`로 확인하거나 정의 원본을 직접 점검 |
 | topic 메시지의 값 일부가 빈칸 | Respond 출력에 해당 필드가 없음 | `Add an output`으로 필드 추가 |
 | 게시 불가 (라이선스) | 평가판 사용 중 | 평가판은 게시 불가. 정식 라이선스 필요 |
 | Credits가 빠르게 소모됨 | GitHub harness는 빌드·테스트도 과금 | PPAC에서 agent 단위 한도 설정 |
@@ -694,10 +775,34 @@ needsHumanReview = false
 
 ### DLP 차단 해제 (Standard agent 게시 차단 사례)
 
-Standard agent는 agent flow를 tool로 호출할 때 **skill 메커니즘**을 사용합니다.
-테넌트 DLP가 `Skills with Copilot Studio` connector를 Blocked 그룹에 두면 게시가 실패합니다.
+Standard agent가 agent flow를 tool로 호출할 때 **skill 메커니즘**을 사용합니다.
+근거: 두 flow 모두 trigger가 `type: Request`, **`kind: Skills`** 로 정의돼 있습니다.
 
-> connector 정확한 이름은 `Skills`가 아니라 **`Skills with Copilot Studio`** 입니다.
+**테넌트 DLP 정책을 API로 조회한 결과(2026-08-06 확인):**
+
+| 항목 | 값 |
+| --- | --- |
+| 적용 정책 | `Personal Developer - (default)` |
+| 정책 ID | `3e80d88d-5384-4039-82bb-d7974f361308` |
+| 범위 | `ExceptEnvironments` (제외 목록 17,553개) |
+| 대상 환경 제외 여부 | **아니요 → 정책이 적용됨** |
+| 미분류 커넥터 기본값 | **`Blocked`** |
+| `Skills with Copilot Studio` | 커넥터 ID **`PvaSkills`** → **Blocked** |
+
+즉 차단은 실수가 아니라 **정책 설계의 결과**입니다.
+이 정책은 명시 허용하지 않은 모든 커넥터를 기본 차단하고,
+`PvaSkills`를 Blocked 그룹에 **명시적으로** 넣어 두었습니다.
+
+같은 정책에서 Copilot Studio 계열 커넥터 분류:
+
+| 분류 | 커넥터 |
+| --- | --- |
+| Blocked | `PvaSkills` (Skills) · `PvaAuth` (인증 없는 채팅) · `PvaFacebook` · `PvaOmniChannel` · `PvaCustomDemoMobile` (Direct Line) · `CSWhatsappChannel` · `CSSharepointChannel` · `CSAppInsights` |
+| Confidential (허용) | `shared_microsoftcopilotstudio` · `PvaMicrosoftTeams` (Teams/M365 채널) · `CSKnowledgeDocs` · `CSKnowledgeSharePoint` · `CSKnowledgePublicSites` |
+
+> **실무적 함의**
+> Teams/M365 채널 게시는 허용돼 있고, knowledge source도 사용할 수 있습니다.
+> **막히는 것은 agent → flow(skill) 호출 하나**입니다.
 
 Dataverse `System Administrator` 역할만으로는 **테넌트 DLP를 변경할 수 없고**,
 Copilot Studio 내부에 우회 수단도 없습니다.
@@ -712,9 +817,14 @@ https://admin.powerplatform.microsoft.com/security/dataprotection/dlp/environmen
 ```text
 Environment: Junwoo Jeong
 Environment ID: e477cbf2-150c-eee7-a852-b29ac07f541d
-Request: Allow the "Skills with Copilot Studio" connector for agent-to-flow calls,
-         or exclude this Developer environment from the blocking tenant DLP policy
-         and govern it with a dedicated environment-level policy.
+Blocking policy: "Personal Developer - (default)" (3e80d88d-5384-4039-82bb-d7974f361308)
+Request: Move connector "Skills with Copilot Studio" (id: PvaSkills) from the
+         Blocked group to Confidential/General for this environment, OR exclude
+         this Developer environment from the policy and govern it with a
+         dedicated environment-level policy.
+Note: The policy sets defaultConnectorsClassification = Blocked, so simply
+      removing PvaSkills from the Blocked list is NOT sufficient — it must be
+      explicitly placed in an allowed group.
 Business purpose: deterministic GitHub issue triage; no external connectors.
 Scope: This Developer environment only. No production data is involved.
 ```
