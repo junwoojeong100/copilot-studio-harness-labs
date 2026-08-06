@@ -90,9 +90,12 @@ Standard harness 산출물은 토글을 끄지 않고 Home의 **Other ways to bu
 
 ### 진입
 
-1. **New experience**를 Off로 전환합니다. (또는 Home → **Other ways to build**)
-2. 왼쪽 **Flows**(또는 **Workflows**)를 선택합니다.
-3. **New agent flow**를 선택합니다.
+1. 왼쪽 **Flows**(또는 **Workflows**)를 선택합니다.
+2. **New agent flow**를 선택합니다.
+
+> 실측 기준으로 agent flow 목록과 **modern 디자이너는 새 경험에서도 열립니다.**
+> 토글을 반드시 Off로 바꿀 필요는 없습니다.
+> 다만 Standard **agent**를 만들 때는 Off(또는 Home → **Other ways to build**)가 필요합니다.
 
 ### 기본 정보
 
@@ -143,49 +146,51 @@ to the Standard harness agent.
 `Combined text` 입력 구성:
 
 두 trigger 입력을 하나의 문자열로 합칩니다.
-**dynamic content 선택기에서 두 입력을 차례로 삽입하는 방식**을 권장합니다.
-식으로 직접 쓸 경우의 참조 패턴은 다음과 같습니다.
+modern 디자이너의 값 입력란은 **토큰 입력 필드**입니다.
+오른쪽 **번개 아이콘(Insert dynamic content)** 으로 trigger 입력 토큰을 차례로 삽입하세요.
+문자열을 직접 타이핑하는 것보다 안전합니다.
 
-```text
-concat(<issue title 입력>, ' ', <issue body 입력>)
-```
+`Category` 입력 구성(스모크 테스트용 최소 규칙):
 
-`Category` 입력식(스모크 테스트용 최소 규칙):
+앞 노드(`Combined text`)의 출력 토큰을 삽입한 뒤,
+`503` 포함 여부로 `bug` / `question`을 판정하는 조건을 구성합니다.
 
-```text
-if(contains(outputs('<결합 노드의 실제 이름>'), '503'), 'bug', 'question')
-```
-
-> **노드 이름은 반드시 포털에서 확인하세요.**
-> 표시 이름과 식에서 참조하는 내부 이름이 다를 수 있고
-> (`Compose`, `Compose 2`, `Respond to the agent 2` 등),
-> 자동 부여되므로 환경마다 달라집니다.
-> B-1의 검증된 workflow에서는 결합 노드의 내부 이름이 `Compose`였습니다.
+> **`outputs('노드이름')` 문법은 classic 디자이너 전용입니다.**
+> modern 디자이너에서 앞 노드 값은 **토큰 칩**으로 표현되며,
+> 실측한 `Respond to the agent 2`의 값도 `Output` 토큰 칩이었습니다.
+> classic 디자이너(Lab B)에서는 아래처럼 씁니다.
+>
+> ```text
+> if(contains(outputs('<결합 노드의 내부 이름>'), '503'), 'bug', 'question')
+> ```
+>
+> classic에서는 **표시 이름과 내부 이름이 다릅니다.**
+> B-1의 검증된 workflow에서 결합 노드의 내부 이름은 `Compose`였습니다.
 > 이름이 틀리면 `outputs('...')`가 null이 됩니다.
-> 가장 안전한 방법은 **직접 타이핑하지 말고 dynamic content 선택기로 삽입**하는 것입니다.
 
 `Respond to the agent` 출력 계약:
 
-> **⚠️ 실측 결과: 현재 게시된 flow의 출력은 `category` 하나뿐입니다.**
-> 노드 구성 패널(`Respond to the agent 2`)에서 직접 확인한 내용:
-> - 설명: `Respond to the calling agent with typed outputs.`
-> - **Outputs**: `category` 1개 (값은 앞 노드 결과 토큰)
-> - `Add an output` 버튼으로 필드를 추가합니다.
->
-> 즉 아래 4-필드 계약은 **목표 구성**이며, 현재 리소스는 아직 1-필드입니다.
-> A-2 topic 메시지에서 `priority` / `summary` / `needsHumanReview`를 참조하면
-> 값이 비어 있게 됩니다. 4-필드로 쓰려면 먼저 출력을 추가하세요.
+노드 구성 패널에서 **`Add an output`** 으로 아래 네 개를 만들고,
+각 값에 앞 노드의 결과 토큰 또는 상수를 지정합니다.
 
-목표 출력 계약(4-필드):
-
-| 출력 이름 | 형식 | 현재 상태 |
+| 출력 이름 | 형식 | 값 |
 | --- | --- | --- |
-| `category` | Text | ✅ 존재 |
-| `priority` | Text | ❌ 미생성 |
-| `summary` | Text | ❌ 미생성 |
-| `needsHumanReview` | Boolean | ❌ 미생성 |
+| `category` | Text | `Category` 노드 출력 토큰 |
+| `priority` | Text | 스모크 테스트에서는 상수 (`P0` 등) |
+| `summary` | Text | 스모크 테스트에서는 상수 |
+| `needsHumanReview` | Boolean | 스모크 테스트에서는 상수 |
 
-이 값들은 A-2의 topic 메시지와 이름이 정확히 일치해야 합니다.
+이 네 이름은 A-2의 topic 메시지와 **정확히 일치**해야 합니다.
+
+> **⚠️ 이 환경에 이미 있는 flow는 출력이 `category` 하나뿐입니다 (실측)**
+> `Respond to the agent 2` 노드 구성 패널에서 직접 확인한 내용:
+> - 설명: `Respond to the calling agent with typed outputs.`
+> - **Outputs**: `category` 1개, 값은 `Output` 토큰 칩
+> - 하단 안내: `Add the typed fields the workflow returns to the agent.`
+>
+> 기존 flow를 **그대로 재사용**한다면 `Add an output`으로 세 개를 추가하거나,
+> A-2의 topic 메시지를 `Category: {category}` 한 줄로 줄여야 합니다.
+> 줄이지 않으면 나머지 세 값이 빈칸으로 출력됩니다.
 
 ### 필수 설정
 
@@ -318,10 +323,10 @@ Summary: {summary}
 Human review required: {needsHumanReview}
 ```
 
-> **⚠️ 현재 flow는 `category` 출력 하나만 정의되어 있습니다(실측).**
+> **⚠️ 기존 flow(출력 `category` 1개)를 재사용하는 경우**
 > 위 메시지를 그대로 쓰면 `{priority}` / `{summary}` / `{needsHumanReview}`가
-> 비어 나옵니다. 우선은 아래처럼 축소해서 시작하고,
-> A-1에서 출력을 추가한 뒤 확장하세요.
+> 빈칸으로 나옵니다. A-1에서 출력 세 개를 추가하거나,
+> 아래처럼 한 줄로 줄여서 시작하세요.
 >
 > ```text
 > Category: {category}
@@ -504,7 +509,7 @@ It returns category, priority, summary, and needsHumanReview.
 ## 테스트 입력과 기대 결과
 
 > **표기 규칙**
-> ✅ = 2026-02 포털에서 **직접 재확인**한 값
+> ✅ = 2026-08-06 포털에서 **직접 재확인**한 값
 > 📄 = 최초 실습 세션의 **기록값**(이번에 재현하지 않음)
 
 ### Lab A: Standard flow 스모크 테스트
@@ -559,7 +564,8 @@ needsHumanReview = true
 ## 확장: 운영용 분류 규칙
 
 스모크 테스트를 실제 분류기로 확장할 때 사용할 규칙입니다.
-Compose 노드에서 아래 규칙을 구현하고, 결과를 Respond 출력에 연결하세요.
+판정 노드에서 아래 규칙을 구현하고, 결과를 Respond 출력에 연결하세요.
+(modern 디자이너는 **Function** 노드, classic 디자이너는 **Compose** 노드입니다.)
 
 | 분류 | 규칙 |
 | --- | --- |
@@ -602,12 +608,12 @@ priority         = P3
 needsHumanReview = false
 ```
 
-> 확장 시 우선순위: **Respond 출력을 Compose 결과로 연결하는 것**이 먼저입니다.
+> 확장 시 우선순위: **Respond 출력을 판정 노드 결과에 연결하는 것**이 먼저입니다.
 > 값이 고정된 상태에서 규칙만 늘리면 응답은 변하지 않습니다.
 
 ## 현재 리소스 상태
 
-아래는 **2026-02 포털에서 직접 확인**한 상태입니다.
+아래는 **2026-08-06 포털에서 직접 확인**한 상태입니다.
 
 환경: `Junwoo Jeong` / `e477cbf2-150c-eee7-a852-b29ac07f541d`
 
@@ -664,9 +670,12 @@ needsHumanReview = false
 
 ### 남은 작업
 
-1. GitHub agent Preview에서 workflow end-to-end 호출 확인
-2. `Skills with Copilot Studio` connector에 대한 DLP 예외 승인 요청
-3. 예외 승인 후 Standard agent 게시 및 end-to-end 호출 확인
+1. `Classify Issue - Standard`의 `Respond to the agent 2`에
+   `priority` / `summary` / `needsHumanReview` 출력 추가
+2. GitHub agent Preview에서 workflow end-to-end 호출 확인
+3. `Skills with Copilot Studio` connector에 대한 DLP 예외 승인 요청
+4. 예외 승인 후 Standard agent 게시 및 end-to-end 호출 확인
+5. 두 flow의 이름을 실제 형식(modern / classic)에 맞게 정리
 
 ## 트러블슈팅
 
@@ -676,7 +685,9 @@ needsHumanReview = false
 | agent가 flow 결과를 기다리지 않음 | Asynchronous response가 On | flow trigger에서 **Off**로 변경 |
 | `DlpViolationError / BlockedConnector` | DLP가 connector 차단 | 아래 DLP 절 참고 |
 | 게시 버튼은 되는데 채널이 없음 | 채널 connector가 DLP에서 차단 | PPAC → Data policy 확인 |
-| `outputs('...')`가 null | 노드 표시 이름 불일치 | 포털의 **실제 노드 이름**으로 식 수정 |
+| `outputs('...')`가 null | classic 디자이너에서 노드 내부 이름 불일치 | 포털의 **실제 내부 이름**으로 식 수정 |
+| modern 디자이너에 `Compose`/`Flow checker`가 없음 | 정상 (modern에는 없는 기능) | **Function** 노드 + `Test`/`Activity` 사용 |
+| topic 메시지의 값 일부가 빈칸 | Respond 출력에 해당 필드가 없음 | `Add an output`으로 필드 추가 |
 | 게시 불가 (라이선스) | 평가판 사용 중 | 평가판은 게시 불가. 정식 라이선스 필요 |
 | Credits가 빠르게 소모됨 | GitHub harness는 빌드·테스트도 과금 | PPAC에서 agent 단위 한도 설정 |
 | Standard flow 실행이 차단됨 | Copilot Studio capacity 소진 | PPAC → Licensing → Copilot Studio |
