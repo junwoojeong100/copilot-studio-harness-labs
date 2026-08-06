@@ -1,6 +1,14 @@
 # `junwoojeong@microsoft.com` 권한 및 포털 기능 확인
 
-최종 확인: 2026-08-05
+최초 확인: 2026-08-05 · 리소스 실측 재확인: 2026-08-06
+
+이 문서는 **실행 기록**입니다. 대상 계정으로 무엇이 가능한지, 실제로 무엇을
+만들었는지를 남깁니다. 실습 절차는 [`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md),
+현재 진행 상태와 남은 작업은 [`README.md`](README.md)가 기준입니다.
+
+> **증거 표기**
+> ✅ = 포털 또는 읽기 전용 API로 재확인
+> 📄 = 최초 세션 기록값. 재현하지 못함
 
 ## 결론
 
@@ -55,9 +63,13 @@ Type: Developer
 판정:
 
 - GitHub Copilot harness workflow 생성 가능
-- Workflow publish와 직접 실행 완료
-- Flow checker 0 errors / 0 warnings
-- 직접 실행 149 ms, Succeeded
+- Workflow publish와 직접 실행 완료 ✅
+- 직접 실행 149 ms, Succeeded ✅ (Flow API로 재확인)
+- Flow checker 0 errors / 0 warnings 📄 (checker 결과를 노출하는 API가 없어 재현 불가)
+
+> checker가 0 errors를 보고했더라도 이 workflow의 **`@` 접두사 누락은 잡히지
+> 않았습니다.** 문법상 유효한 문자열이기 때문입니다.
+> 상세는 [`PORTAL_CREATION_GUIDE.md`의 B-1](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기)을 참고하세요.
 
 ### Standard harness agent
 
@@ -165,9 +177,57 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 
 따라서 앞으로는 SKU 추정보다 실제 포털 기능을 기준으로 판단합니다.
 
+## 만들어진 리소스 실측 (2026-08-06)
+
+조회 방법은 [`VERIFICATION.md`](VERIFICATION.md)를 참고하세요.
+
+### Agents (Dataverse `bots`)
+
+| Name (저장된 값) | Bot ID | 상태 |
+| --- | --- | --- |
+| `Simple Issue Triage Standard` | `54edb8e6-c490-f111-b8da-000d3a329d3b` | Draft ✅ (`publishedon` = `null`) — DLP 차단 |
+| `Simple Issue Triage GitHub Har` | `4236d9a0-9d6e-42b3-9377-a65e1c188d00` | Published ✅ `2026-08-05T11:54:16Z` |
+
+> **Bot ID를 2026-08-06에 정정했습니다.**
+> 이전 기록의 `bbbb7d70…` / `7b3b35af…`는 `bots` 테이블에 존재하지 않았습니다.
+> GitHub agent 이름은 **30자 제한으로 잘려** 저장돼 있습니다
+> (입력값 `Simple Issue Triage GitHub Harness` 34자 → 저장값 30자).
+
+### Workflows (Dataverse `workflows`)
+
+포털 flow ID와 Dataverse workflow ID는 **동일한 값**입니다.
+
+| Name | Workflow ID | 상태 |
+| --- | --- | --- |
+| `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published ✅ · direct run 123 ms Succeeded ✅ |
+| `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published ✅ · direct run 149 ms Succeeded ✅ · checker 0/0 📄 |
+| `Classify Issue - GitHub Harness (API Reference)` | `48ed52fb-bc90-f111-b8da-000d3a329d3b` | Activated. **포털 목록에는 미표시** |
+
+직접 실행 기록:
+
+```text
+Standard  : Run ID 08584156703223952675185929598CU03 · 123 ms · Succeeded
+GitHub    : Run ID 08584156712497958263468546463CU12 · 149 ms · Succeeded
+            Outputs: bug / P0 / Classified as bug with priority P0. / true
+```
+
+> GitHub workflow의 출력 4개는 **정의상 고정 상수**입니다.
+> 입력과 무관하게 같은 값이 반환되므로, 이 실행 성공은 분류 정확성의 근거가 아닙니다.
+
+### Agent → tool 연결
+
+`Simple Issue Triage Standard`의 Tools에 `Classify Issue - Standard` 연결을 완료했습니다.
+
+> 초기에 발생한 Standard publish의 CloudFlow `NotFound` 오류는
+> **native tool로 등록**하면서 해결됐습니다.
+> 현재 남은 차단 원인은 `DlpViolationError / BlockedConnector` 하나이며,
+> 차단된 connector는 `Skills with Copilot Studio`(`PvaSkills`)입니다.
+> Dataverse `System Administrator` 역할만으로는 tenant DLP를 변경할 수 없습니다.
+> 해제 절차: [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)
+
 ## 현재 실습 가능 범위
 
-현재 리소스 상태는 **4종 생성 완료, 3종 Published, 1종 Draft**입니다.
+**4종 생성 완료, 3종 Published, 1종 Draft**입니다.
 Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필요합니다.
 
 | 단계 | 현재 상태 |
@@ -176,43 +236,16 @@ Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필
 | Standard agent flow 생성 | 가능 |
 | GitHub Copilot harness agent 생성 | 가능 |
 | GitHub Copilot harness workflow 생성 | 가능 |
-| GitHub agent publish | 가능함을 기존 Published agent로 확인 |
+| GitHub agent publish | 가능 (Published agent로 확인) |
 | GitHub workflow publish/run | Published, direct run PASS |
 | Standard agent publish | Tool 연결 완료, tenant DLP로 차단 |
 | Standard agent flow publish/run | Published, direct run PASS (123 ms) |
 | 웹 Test/Preview | 가능 |
 
-## 남은 운영 작업
+## 남은 작업
 
-1. GitHub agent end-to-end Preview
-2. Power Platform DLP 정책에서 `Skills with Copilot Studio` connector 허용 또는 환경 예외 승인
-   (절차: [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제))
-3. Standard agent Publish와 end-to-end Preview
+**남은 작업 목록은 [`README.md`의 "남은 작업"](README.md#남은-작업)이 유일한 기준입니다.**
+이 문서에서 중복 관리하지 않습니다.
 
-## 최종 판정
-
-### 가능
-
-- Standard agent
-- Standard agent flow
-- GitHub Copilot harness agent
-- GitHub Copilot harness workflow
-
-### 실제 확인 완료
-
-- Standard native workflow `392d1a43-33d8-247c-fb53-b45dd60eb31c` publish
-- Standard native workflow direct run: 123 ms, Succeeded
-- Standard native workflow Run ID: `08584156703223952675185929598CU03`
-- GitHub native workflow `a6666167-9cca-6bb0-ad80-8490bb022981` publish
-- GitHub native workflow Flow checker 0 errors / 0 warnings
-- GitHub native workflow direct run: 149 ms, Succeeded
-- GitHub native workflow outputs: `bug`, `P0`, `Classified as bug with priority P0.`, `true`
-- Standard agent tool `Classify Issue - Standard` 연결
-- GitHub agent Published
-
-### 추가 확인이 필요한 것
-
-- `Simple Issue Triage Standard` Publish
-- Standard agent + agent flow end-to-end run
-- GitHub agent + workflow end-to-end Preview
-- tenant DLP 예외 승인
+요약하면 tenant DLP에서 `Skills with Copilot Studio` 예외가 승인되어야
+Standard agent 게시와 end-to-end 검증을 진행할 수 있습니다.

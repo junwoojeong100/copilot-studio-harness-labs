@@ -238,15 +238,34 @@ DLP 정책이 `Skills with Copilot Studio` connector를 **Blocked** 그룹에 �
 > **두 겹으로 막혀 있습니다.**
 > 기본 분류가 `Blocked`라서 미등록 커넥터는 전부 차단되고,
 > `PvaSkills`는 그 위에 Blocked 그룹에 **명시적으로도** 들어 있습니다.
-> 따라서 "Business로 옮겨 주세요"가 아니라
-> **"허용 그룹(Confidential/General)에 추가해 주세요"** 로 요청해야 합니다.
+> 따라서 "차단 목록에서 빼 주세요"가 아니라
+> **"허용 그룹에 명시적으로 넣어 주세요"** 로 요청해야 합니다.
 
-같은 정책의 Copilot Studio 계열 커넥터 분류:
+<a id="dlp-group-naming"></a>
+
+> **⚠️ 그룹 이름이 화면과 API에서 다릅니다 — 먼저 읽으세요**
+> PPAC 화면과 정책 API는 **같은 그룹을 다른 이름으로** 부릅니다.
+> 이 문서와 [`VERIFICATION.md`](VERIFICATION.md)는 API 값을 그대로 인용하므로,
+> PPAC에서 `Confidential`을 검색하면 아무것도 찾을 수 없습니다.
+>
+> | PPAC 화면 (관리자가 보는 것) | 정책 API / PowerShell 값 | 의미 |
+> | --- | --- | --- |
+> | **Business** | `Confidential` | 업무 데이터용. 허용 |
+> | **Non-business** | `General` | 비업무 데이터용. 허용 |
+> | **Blocked** | `Blocked` | 사용 불가 |
+>
+> Business와 Non-business는 **둘 다 "사용 허용"** 입니다.
+> 둘의 차이는 허용/차단이 아니라 **서로 다른 그룹의 커넥터를 한 agent에서
+> 같이 못 쓴다**는 데이터 분리 규칙입니다.
+> 근거: `Add-ConnectorsToPolicy -Classification Confidential`은 Microsoft 문서에서
+> "adds the connector to the **Business** group"으로 설명됩니다.
+
+같은 정책의 Copilot Studio 계열 커넥터 분류(API 값 기준):
 
 | 분류 | 커넥터 ID |
 | --- | --- |
 | Blocked | `PvaSkills` · `PvaAuth` · `PvaFacebook` · `PvaOmniChannel` · `PvaCustomDemoMobile` · `CSWhatsappChannel` · `CSSharepointChannel` · `CSAppInsights` |
-| 허용(Confidential) | `shared_microsoftcopilotstudio` · `PvaMicrosoftTeams` · `CSKnowledgeDocs` · `CSKnowledgeSharePoint` · `CSKnowledgePublicSites` |
+| `Confidential` = PPAC의 **Business** (허용) | `shared_microsoftcopilotstudio` · `PvaMicrosoftTeams` · `CSKnowledgeDocs` · `CSKnowledgeSharePoint` · `CSKnowledgePublicSites` |
 
 즉 **Teams/M365 채널 게시와 knowledge source는 허용**돼 있고,
 막히는 것은 **agent → flow(skill) 호출 하나**입니다.
@@ -281,9 +300,17 @@ Power Platform 관리 센터
 3. 차단 중인 정책을 찾습니다. **테넌트 수준 정책부터** 확인하세요.
 4. 정책을 선택하고 **Edit Policy**를 누릅니다.
 5. **Assign connectors** 페이지에서 `Skills with Copilot Studio`를 검색합니다.
-6. 해당 connector를 **Business** 또는 **Non-business**로 이동합니다.
+6. 해당 connector를 **Business** 또는 **Non-business**로 이동합니다
+   (정책 API에서는 각각 `Confidential` / `General`로 보입니다 —
+   [그룹 이름 대조표](#dlp-group-naming) 참고).
    이때 **agent가 사용하는 다른 connector와 같은 그룹**에 두어야 합니다.
+   그룹이 갈리면 허용된 커넥터끼리도 함께 쓸 수 없습니다.
 7. 마법사를 끝까지 진행하고 **Update Policy**로 저장합니다.
+
+> 이 정책처럼 `defaultConnectorsClassification`이 `Blocked`인 경우,
+> **Blocked 목록에서 지우기만 해서는 해결되지 않습니다.**
+> 분류되지 않은 커넥터는 기본값으로 다시 차단되므로
+> 반드시 Business 또는 Non-business에 **명시적으로** 넣어야 합니다.
 
 **방법 B — 환경 예외 적용**
 
@@ -322,7 +349,7 @@ Power Platform 관리 센터
 | 공개 웹사이트 knowledge source | `Knowledge source with public websites and data in Copilot Studio` | `CSKnowledgePublicSites` |
 | SharePoint/OneDrive knowledge source | `Knowledge source with SharePoint and OneDrive in Copilot Studio` | `CSKnowledgeSharePoint` |
 | Demo/커스텀 웹사이트·모바일 앱 게시 | `Direct Line channels in Copilot Studio` | `PvaCustomDemoMobile` |
-| Teams 및 M365 채널 게시 | `Microsoft Teams + M365 Channel in Copilot Studio` | `PvaMicrosoftTeams` |
+| Teams 및 M365 채널 게시 | `Microsoft Teams + Microsoft 365 Channel in Copilot Studio` | `PvaMicrosoftTeams` |
 | Facebook 채널 게시 | `Facebook channel in Copilot Studio` | `PvaFacebook` |
 | SharePoint 채널 게시 | `SharePoint channel in Copilot Studio` | `CSSharepointChannel` |
 | WhatsApp 채널 게시 | `WhatsApp channel in Copilot Studio` | `CSWhatsappChannel` |
@@ -349,15 +376,28 @@ Power Platform 관리 센터
 
 ### 6.6 관리자 요청 템플릿
 
+먼저 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인-차단-원인-규명)으로
+**차단 정책 이름·ID와 기본 분류값을 확인**한 뒤, 그 값을 채워서 보내세요.
+정책 이름 없이 요청하면 관리자가 어느 정책을 봐야 할지 알 수 없습니다.
+
 ```text
 Environment: <환경 이름>
 Environment ID: <환경 ID>
-Request: Allow the "Skills with Copilot Studio" connector for agent-to-flow calls,
-         or exclude this environment from the blocking tenant DLP policy
-         and govern it with a dedicated environment-level policy.
+Blocking policy: "<정책 이름>" (<정책 ID>)
+Request: Move connector "Skills with Copilot Studio" (id: PvaSkills) from the
+         Blocked group into an allowed group (PPAC "Business" / "Non-business",
+         shown as Confidential / General in the policy API) for this environment,
+         OR exclude this environment from the policy and govern it with a
+         dedicated environment-level policy.
+Note: If the policy sets defaultConnectorsClassification = Blocked, simply
+      removing PvaSkills from the Blocked list is NOT sufficient — it must be
+      placed in an allowed group explicitly.
 Business purpose: <용도. 예: deterministic GitHub issue triage; no external connectors>
 Scope: This environment only. No production data is involved.
 ```
+
+이 저장소 실습 환경의 실제 값을 채운 예시는
+[`PORTAL_CREATION_GUIDE.md`의 DLP 절](PORTAL_CREATION_GUIDE.md#dlp-차단-해제-standard-agent-게시-차단-사례)에 있습니다.
 
 ## 7. 트러블슈팅 빠른 참조
 

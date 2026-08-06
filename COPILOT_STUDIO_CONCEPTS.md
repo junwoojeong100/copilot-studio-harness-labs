@@ -248,6 +248,13 @@ Copilot Studio 전용 DLP 가상 connector 예:
 > 2019년 이후 도입된 connector는 대개 기본 그룹인 **Non-business**에 들어갑니다.
 > 많은 조직이 Non-business를 자동 차단하므로, 원인 불명의 차단이 생기면
 > **해당 connector가 어느 데이터 그룹에 있는지부터** 확인하세요.
+> 다만 이는 기본값일 뿐이고, 정책이 미분류 커넥터를 전부 차단하도록
+> 설정되어 있을 수도 있습니다. 실제 이 저장소 실습 환경이 그런 경우입니다.
+>
+> 위 표는 **PPAC 화면에 보이는 그룹 이름**입니다.
+> 정책 API는 같은 그룹을 `Confidential`(Business) / `General`(Non-business) /
+> `Blocked`로 부릅니다. 대조표는
+> [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#dlp-group-naming)에 있습니다.
 
 전체 역할·권한 정리는 [`ROLES_AND_PERMISSIONS.md`](ROLES_AND_PERMISSIONS.md)를 참고하세요.
 

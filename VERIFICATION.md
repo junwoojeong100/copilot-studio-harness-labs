@@ -36,6 +36,23 @@ az account show --query user.name -o tsv
 | Power Automate | `https://service.flow.microsoft.com/` | flow 실행 이력 |
 | Dataverse | `https://<org>.crm.dynamics.com` | agent·flow 정의 원본 |
 
+> **아래 예제의 공통 규칙**
+> - 토큰은 **API마다 다릅니다.** 리소스 URI가 바뀌면 `TOK`를 다시 받아야 합니다.
+>   각 장의 `az account get-access-token`을 건너뛰면 `401`이 납니다.
+> - `ENV` / `DV` / `ID`는 **같은 셸에서 계속 재사용**합니다.
+>   새 터미널을 열었다면 1장부터 다시 실행해 값을 채우세요.
+> - 토큰은 약 1시간 후 만료됩니다. `401`이 나오면 `TOK`만 다시 받으면 됩니다.
+> - 토큰을 파일이나 문서에 붙여 넣지 마세요. 셸 변수로만 다루면 됩니다.
+
+이 문서에서 쓰는 변수:
+
+| 변수 | 의미 | 채우는 곳 |
+| --- | --- | --- |
+| `ENV` | 환경 ID | 직접 입력 (Copilot Studio URL 또는 PPAC) |
+| `DV` | 환경의 Dataverse URL | 1장 결과 |
+| `ID` | 대상 workflow ID | 포털 flow URL 또는 3장 |
+| `TOK` | **현재 대상 API**의 액세스 토큰 | 각 장에서 재발급 |
+
 ## 1. 환경의 Dataverse URL 찾기
 
 ```bash
