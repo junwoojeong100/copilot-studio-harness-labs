@@ -29,8 +29,9 @@ Type: Developer
 
 새 경험의 **Agents** 페이지에서 확인:
 
-- Agent: `Simple Issue Triage GitHub Harness`
-- Status: `Published`
+- Agent: `Simple Issue Triage GitHub Har` (입력값 34자 → **30자로 잘려 저장**)
+- Bot ID: `4236d9a0-9d6e-42b3-9377-a65e1c188d00`
+- Status: `Published` (`publishedon` = `2026-08-05T11:54:16Z`)
 - Owner: `Junwoo Jeong`
 - Powered by: `GitHub Copilot`
 - 표시 문구: `This agent uses GitHub Copilot. It consumes Copilot Credits.`

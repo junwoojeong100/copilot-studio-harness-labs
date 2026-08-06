@@ -18,7 +18,13 @@ Type: Developer
 | A-1 | Standard | Agent flow | `Classify Issue - Standard` |
 | A-2 | Standard | Agent | `Simple Issue Triage Standard` |
 | B-1 | GitHub Copilot | Workflow | `Classify Issue - GitHub Harness` |
-| B-2 | GitHub Copilot | Agent | `Simple Issue Triage GitHub Harness` |
+| B-2 | GitHub Copilot | Agent | `Simple Issue Triage GitHub` |
+
+> **⚠️ agent 이름은 30자를 넘기지 마세요.**
+> 초과분은 저장 시 **조용히 잘립니다**(오류 메시지 없음).
+> 최초 실습에서 `Simple Issue Triage GitHub Harness`(34자)로 입력했더니
+> Dataverse에 `Simple Issue Triage GitHub Har`(30자)로 저장됐습니다.
+> 위 표의 이름은 그 문제를 피하도록 조정한 값입니다.
 
 > Copilot Studio에는 harness가 **세 가지**(GitHub Copilot / Standard / Copilot chat) 있습니다.
 > 이 실습은 자동화 산출물을 만들 수 있는 앞의 두 가지만 다룹니다.
@@ -104,8 +110,8 @@ Name:
 Classify Issue - Standard
 
 Description:
-Runs a simple issue-triage smoke test and responds synchronously
-to the Standard harness agent.
+Classifies a GitHub issue into security, bug, documentation, feature, or
+question, and responds synchronously to the Standard harness agent.
 ```
 
 ### Trigger
@@ -507,12 +513,17 @@ Outputs: bug / P0 / Classified as bug with priority P0. / true
 
 ```text
 Name:
-Simple Issue Triage GitHub Harness
+Simple Issue Triage GitHub
 
 Description:
 Uses GitHub Copilot orchestration to collect issue information and call
-a workflow that returns a structured smoke-test result.
+a workflow that returns a structured classification result.
 ```
+
+> 이름은 **30자 이내**여야 합니다. 초과하면 경고 없이 잘립니다.
+> `Simple Issue Triage GitHub`는 26자입니다.
+> 이미 34자 이름으로 만들었다면 Dataverse에는
+> `Simple Issue Triage GitHub Har`로 저장돼 있습니다.
 
 Instructions:
 

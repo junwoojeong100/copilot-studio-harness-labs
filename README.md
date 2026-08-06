@@ -52,7 +52,7 @@ Lab A (Standard harness)
 
 Lab B (GitHub Copilot harness)
   B-1. Workflow    : Classify Issue - GitHub Harness
-  B-2. Agent       : Simple Issue Triage GitHub Harness
+  B-2. Agent       : Simple Issue Triage GitHub   (30자 이내로!)
 ```
 
 > **순서 주의**: flow/workflow를 먼저 만들어 **게시**한 뒤 agent에 tool로 연결합니다.
