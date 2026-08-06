@@ -10,6 +10,12 @@ Microsoft Copilot Studio에서 같은 GitHub 이슈 분류기를
 3. Flow를 게시한 뒤 agent에 tool로 연결합니다.
 4. [`VERIFICATION.md`](VERIFICATION.md)로 저장 정의와 실행 결과를 확인합니다.
 
+| 목표 | 바로 시작 |
+| --- | --- |
+| Standard harness만 실습 | [`A-1. Agent flow 만들기`](PORTAL_CREATION_GUIDE.md#a-1-agent-flow-만들기) |
+| GitHub Copilot harness만 실습 | [`B-1. Workflow 만들기`](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기) |
+| 두 harness 비교 | A-1 → A-2 → B-1 → B-2 |
+
 처음 접하는 경우에는 다음 순서로 읽으세요.
 
 ```text

@@ -28,7 +28,8 @@ Copilot Studio는 단독 제품이 아니라 **Power Platform 위의 애플리�
 
 > **핵심 원칙**: 테넌트 관리자 역할(Entra)과 환경 보안 역할(Dataverse)은 **별개**입니다.
 > Power Platform 관리자여도 자동으로 환경의 System Administrator가 되지는 않습니다.
-> 현재는 **self-elevation**을 거쳐야 System Administrator 권한을 얻습니다.
+> 환경 관리 작업에 System Administrator가 필요하면 PPAC에서 해당 환경에
+> **self-elevation**한 뒤 작업하세요.
 
 ## 2. 역할 카탈로그
 
@@ -223,14 +224,17 @@ Dataverse가 없는 환경에서는 **Environment Admin** / **Environment Maker*
 
 ### 6.1 증상
 
-Standard harness agent를 게시할 때 다음 오류가 발생합니다.
+Agent에 agent flow 또는 workflow를 tool로 연결한 뒤 테스트하거나 게시할 때
+다음 오류가 발생할 수 있습니다.
 
 ```text
 DlpViolationError / BlockedConnector
 ```
 
-원인: agent가 agent flow를 tool로 호출하기 위해 **skill 메커니즘**을 사용하는데,
+원인: agent가 flow를 tool로 호출하기 위해 **skill 메커니즘**을 사용하는데,
 DLP 정책이 `Skills with Copilot Studio` connector를 **Blocked** 그룹에 넣어 두었기 때문입니다.
+
+이 저장소에서는 Standard harness agent 게시에서 실제로 발생했습니다.
 
 > 정확한 connector 이름은 `Skills`가 아니라 **`Skills with Copilot Studio`**,
 > 커넥터 ID는 **`PvaSkills`** 입니다.
@@ -278,7 +282,7 @@ DLP 정책이 `Skills with Copilot Studio` connector를 **Blocked** 그룹에 �
 | `Confidential` = PPAC의 **Business** (허용) | `shared_microsoftcopilotstudio` · `PvaMicrosoftTeams` · `CSKnowledgeDocs` · `CSKnowledgeSharePoint` · `CSKnowledgePublicSites` |
 
 즉 **Teams/M365 채널 게시와 knowledge source는 허용**돼 있고,
-막히는 것은 **agent → flow(skill) 호출 하나**입니다.
+막히는 것은 **agent → flow/workflow(skill) 호출**입니다.
 
 정책 조회 방법은 [`VERIFICATION.md` 5장](VERIFICATION.md#5-dlp-정책-확인)을 참고하세요.
 

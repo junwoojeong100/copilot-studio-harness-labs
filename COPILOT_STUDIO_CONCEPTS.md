@@ -13,7 +13,7 @@ Microsoft Copilot Studio의 전반적인 개념, 구성 요소, 기능을 한 �
 - Power Platform 위에서 동작하므로 **환경(environment), Dataverse, solution, DLP** 개념을 그대로 상속합니다.
 
 이 마지막 항목이 중요합니다. Copilot Studio를 "채팅봇 도구"로만 이해하면
-권한·거버넌스·배포에서 반드시 막힙니다. 실제로는 **Power Platform 애플리케이션**입니다.
+권한·거버넌스·배포에서 쉽게 막힙니다. 실제로는 **Power Platform 애플리케이션**입니다.
 
 ## 2. 무엇을 만들 수 있나
 
@@ -21,7 +21,7 @@ Microsoft Copilot Studio의 전반적인 개념, 구성 요소, 기능을 한 �
 
 | 빌딩 블록 | 정의 | 성격 |
 | --- | --- | --- |
-| **Agent** | 대화를 처리하고 작업을 수행하는 AI 어시스턴트 | 비결정론적, 추론 기반 |
+| **Agent** | 대화를 처리하고 작업을 수행하는 AI 어시스턴트 | orchestration 설정에 따라 규칙 기반 또는 추론 기반 |
 | **Workflow** | GitHub Copilot harness의 자동화. 재설계된 시각적 캔버스, 네이티브 AI action, agent handoff, node 단위 테스트 | 결정론적 경로 + AI 단계 |
 | **Agent flow** | Copilot Studio 네이티브의 기존 flow 형식. Power Automate와 유사한 저작 경험 | 결정론적 |
 
@@ -34,7 +34,7 @@ Microsoft Copilot Studio의 전반적인 개념, 구성 요소, 기능을 한 �
 | Harness | 산출물 | 성격 | 과금 |
 | --- | --- | --- | --- |
 | GitHub Copilot harness | agent, workflow | 추론 중심, 다단계, 파일 처리, skills/memory | Copilot Credits |
-| Standard harness | agent, agent flow | 규칙 기반, 예측 가능 | Copilot Studio capacity |
+| Standard harness | agent, agent flow | classic과 generative orchestration 지원 | Copilot Studio capacity |
 | Copilot chat harness | agent | M365 Copilot Chat 확장 | 소비 기반 또는 M365 Copilot USL 포함 |
 
 상세 비교는 [`HARNESS_COMPARISON.md`](HARNESS_COMPARISON.md)를 참고하세요.
@@ -86,8 +86,8 @@ agent가 답변의 근거로 사용하는 데이터입니다.
   단, 모델이 knowledge 결과와 일반 지식을 섞는 것까지 막지는 못합니다.
 - 인증 기반 소스는 **질문한 사용자가 접근 가능한 콘텐츠만** 노출합니다.
 
-> 근거 인용(citation)이 없으면 답변이 보류될 수 있습니다.
-> "항상 출처를 인용하라"는 instruction을 넣고, JSON 강제 같은 경직된 출력 형식은 피하세요.
+> 근거 인용(citation)이 필요한 agent라면 instruction에 출처 인용 요구를 명시하세요.
+> JSON 강제처럼 citation 출력을 방해할 수 있는 경직된 형식은 피하는 편이 안전합니다.
 
 ### 4.4 Tools
 

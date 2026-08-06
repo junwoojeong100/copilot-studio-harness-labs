@@ -28,10 +28,11 @@ az account show --query user.name -o tsv
 
 ## 1. 환경과 Dataverse URL 확인
 
-`<environment-id>`를 Copilot Studio URL이나 PPAC에서 확인한 값으로 바꿉니다.
+`replace-with-environment-id`를 Copilot Studio URL이나 PPAC에서 확인한 값으로
+바꿉니다.
 
 ```bash
-ENV=<environment-id>
+ENV="replace-with-environment-id"
 TOK=$(az account get-access-token --resource "https://api.bap.microsoft.com/" \
       --query accessToken -o tsv)
 
@@ -69,8 +70,13 @@ curl -fsS -H "Authorization: Bearer ${TOK}" \
 먼저 대상 workflow의 ID를 찾습니다.
 
 ```bash
-curl -fsS -H "Authorization: Bearer ${TOK}" \
-  "$DV/api/data/v9.2/workflows?\$select=name,workflowid,statecode&\$filter=contains(name,'Classify Issue')" \
+TOK=$(az account get-access-token --resource "$DV" --query accessToken -o tsv)
+WORKFLOW_NAME="Classify Issue"
+
+curl -fsS -G -H "Authorization: Bearer ${TOK}" \
+  --data-urlencode '$select=name,workflowid,statecode' \
+  --data-urlencode "\$filter=contains(name,'${WORKFLOW_NAME}')" \
+  "$DV/api/data/v9.2/workflows" \
 | python3 -c "
 import json,sys
 for w in json.load(sys.stdin)['value']:
@@ -81,7 +87,7 @@ for w in json.load(sys.stdin)['value']:
 출력에서 확인할 ID를 선택합니다.
 
 ```bash
-ID=<workflow-id>
+ID="replace-with-workflow-id"
 
 curl -fsS -H "Authorization: Bearer ${TOK}" \
   "$DV/api/data/v9.2/workflows(${ID})?\$select=name,clientdata" \
@@ -95,7 +101,7 @@ for k,v in d.get('triggers',{}).items():
     print('TRIGGER',k,v.get('type'),'kind=',v.get('kind'))
 for k,v in d.get('actions',{}).items():
     print('ACTION ',k,v.get('type'))
-    print('   ',json.dumps(v.get('inputs'),ensure_ascii=False)[:500])
+    print(json.dumps(v.get('inputs'),ensure_ascii=False,indent=2))
 "
 ```
 
@@ -122,9 +128,8 @@ import json,sys
 from datetime import datetime
 for r in json.load(sys.stdin)['value']:
     p=r['properties']
-    f='%Y-%m-%dT%H:%M:%S.%f'
-    s=datetime.strptime(p['startTime'][:26],f)
-    e=datetime.strptime(p['endTime'][:26],f)
+    s=datetime.fromisoformat(p['startTime'].replace('Z','+00:00'))
+    e=datetime.fromisoformat(p['endTime'].replace('Z','+00:00'))
     print(r['name'],p['status'],f'{(e-s).total_seconds()*1000:.0f}ms')
 "
 ```
@@ -139,7 +144,17 @@ TOK=$(az account get-access-token --resource "https://api.bap.microsoft.com/" \
 
 curl -fsS -H "Authorization: Bearer ${TOK}" \
   "https://api.bap.microsoft.com/providers/PowerPlatform.Governance/v2/policies?api-version=2020-10-01" \
-  -o policies.json
+| python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+for row in data.get('value',[]):
+    p=row.get('properties',{})
+    print('ID      :',row.get('name'))
+    print('Name    :',p.get('displayName'))
+    print('Scope   :',p.get('environmentType'))
+    print('Default :',p.get('defaultConnectorsClassification'))
+    print()
+"
 ```
 
 환경에 적용되는 정책을 찾는 규칙:
@@ -153,7 +168,7 @@ curl -fsS -H "Authorization: Bearer ${TOK}" \
 정책 ID를 찾은 뒤 상세를 확인합니다.
 
 ```bash
-POLICY_ID=<policy-id>
+POLICY_ID="replace-with-policy-id"
 
 curl -fsS -H "Authorization: Bearer ${TOK}" \
   "https://api.bap.microsoft.com/providers/PowerPlatform.Governance/v2/policies/${POLICY_ID}?api-version=2020-10-01" \

@@ -39,7 +39,7 @@ Type: Developer
 
 - Agent: `Simple Issue Triage GitHub Har` (입력값 34자 → **30자로 잘려 저장**)
 - Bot ID: `4236d9a0-9d6e-42b3-9377-a65e1c188d00`
-- Status: `Published` (`publishedon` = `2026-08-05T11:54:16Z`)
+- Status: `Published` (`publishedon` = `2026-08-06T15:37:55Z`)
 - Owner: `Junwoo Jeong`
 - Powered by: `GitHub Copilot`
 - 표시 문구: `This agent uses GitHub Copilot. It consumes Copilot Credits.`
@@ -63,13 +63,9 @@ Type: Developer
 판정:
 
 - GitHub Copilot harness workflow 생성 가능
-- Workflow publish와 직접 실행 완료 ✅
-- 직접 실행 149 ms, Succeeded ✅ (Flow API로 재확인)
-- Flow checker 0 errors / 0 warnings 📄 (checker 결과를 노출하는 API가 없어 재현 불가)
-
-> checker가 0 errors를 보고했더라도 이 workflow의 **`@` 접두사 누락은 잡히지
-> 않았습니다.** 문법상 유효한 문자열이기 때문입니다.
-> 수정할 값은 [`PORTAL_CREATION_GUIDE.md`의 B-1](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기)을 참고하세요.
+- 5분류와 P0~P3 우선순위 규칙으로 수정·게시 완료 ✅
+- 서로 다른 입력 5건을 직접 실행해 분기와 Boolean 출력을 확인 ✅
+- 최종 Flow checker는 API가 없어 재조회 불가. 저장 정의와 실행 결과로 대체
 
 ### Standard harness agent
 
@@ -186,7 +182,7 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 | Name (저장된 값) | Bot ID | 상태 |
 | --- | --- | --- |
 | `Simple Issue Triage Standard` | `54edb8e6-c490-f111-b8da-000d3a329d3b` | Draft ✅ (`publishedon` = `null`) — DLP 차단 |
-| `Simple Issue Triage GitHub Har` | `4236d9a0-9d6e-42b3-9377-a65e1c188d00` | Published ✅ `2026-08-05T11:54:16Z` |
+| `Simple Issue Triage GitHub Har` | `4236d9a0-9d6e-42b3-9377-a65e1c188d00` | Published ✅ `2026-08-06T15:37:55Z` |
 
 > **Bot ID를 2026-08-06에 정정했습니다.**
 > 이전 기록의 `bbbb7d70…` / `7b3b35af…`는 `bots` 테이블에 존재하지 않았습니다.
@@ -200,23 +196,36 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 | Name | Workflow ID | 상태 |
 | --- | --- | --- |
 | `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published ✅ · direct run 123 ms Succeeded ✅ |
-| `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published ✅ · direct run 149 ms Succeeded ✅ · checker 0/0 📄 |
+| `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published ✅ · 5분류/P0~P3 동적 출력 ✅ · required tests 3/3 PASS ✅ |
 | `Classify Issue - GitHub Harness (API Reference)` | `48ed52fb-bc90-f111-b8da-000d3a329d3b` | Activated. **포털 목록에는 미표시** |
 
 직접 실행 기록:
 
 ```text
 Standard  : Run ID 08584156703223952675185929598CU03 · 123 ms · Succeeded
-GitHub    : Run ID 08584156712497958263468546463CU12 · 149 ms · Succeeded
-            Outputs: bug / P0 / Classified as bug with priority P0. / true
+GitHub bug: Run ID 08584155756901025273018959107CU23 · 197 ms · Succeeded
+            bug / P2 / Classified as bug with priority P2. / false
+GitHub sec: Run ID 08584155756752622167908104751CU21 · 281 ms · Succeeded
+            security / P1 / Classified as security with priority P1. / true
+GitHub doc: Run ID 08584155756598719867553132378CU09 · 139 ms · Succeeded
+            documentation / P3 / Classified as documentation with priority P3. / false
 ```
 
-> GitHub workflow의 출력 4개는 **정의상 고정 상수**입니다.
-> 입력과 무관하게 같은 값이 반환되므로, 이 실행 성공은 분류 정확성의 근거가 아닙니다.
+GitHub workflow의 Response는 앞 노드의 계산 결과와 연결돼 있습니다.
+`needsHumanReview`는 `@equals(outputs('Compose_1'),'security')`로 저장해
+문자열이 아닌 JSON Boolean을 반환합니다.
 
 ### Agent → tool 연결
 
 `Simple Issue Triage Standard`의 Tools에 `Classify Issue - Standard` 연결을 완료했습니다.
+
+`Simple Issue Triage GitHub Har`의 workflow tool도 수정했습니다.
+
+- 올바른 workflow ID `a6666167-9cca-6bb0-ad80-8490bb022981`로 재연결 ✅
+- 출력 `category`, `priority`, `summary`, `needsHumanReview` 4개 동기화 ✅
+- Tool description 추가 ✅
+- Agent 재게시 완료 (`publishedon` = `2026-08-06T15:37:55Z`) ✅
+- Preview 대화 검증은 macOS 세션 잠금으로 미실행
 
 > 초기에 발생한 Standard publish의 CloudFlow `NotFound` 오류는
 > **native tool로 등록**하면서 해결됐습니다.
@@ -237,21 +246,21 @@ Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필
 | GitHub Copilot harness agent 생성 | 가능 |
 | GitHub Copilot harness workflow 생성 | 가능 |
 | GitHub agent publish | 가능 (Published agent로 확인) |
-| GitHub workflow publish/run | Published, direct run PASS |
+| GitHub workflow publish/run | Published, 5분류 required tests 3/3 PASS |
+| GitHub agent workflow tool | 올바른 B-1 workflow와 출력 4개 연결, 재게시 완료 |
 | Standard agent publish | Tool 연결 완료, tenant DLP로 차단 |
 | Standard agent flow publish/run | Published, direct run PASS (123 ms) |
-| 웹 Test/Preview | 가능 |
+| 웹 Test/Preview | B-1 Test PASS. B-2 Preview는 세션 잠금으로 미확인 |
 
 ## 남은 작업
 
 | 항목 | 상태 | 해결 방법 |
 | --- | --- | --- |
-| Lab B 첫 Compose의 `@` 누락 수정 | 미해결 | 가이드 B-1의 `Combined text` 식으로 교체 후 재게시 |
-| Lab B Respond를 계산 결과에 연결 | 미해결 | 가이드 B-1의 출력 계약대로 `outputs(...)` 연결 |
 | Standard Response 출력 3개 추가 | 미해결 | `priority`, `summary`, `needsHumanReview` 추가 |
 | Standard `Priority` 노드 추가 | 미해결 | 가이드 A-1의 Priority 식 사용 |
-| Lab B Flow checker 재확인 | 재현 불가 | API가 없어 정의 원본 점검으로 대체 |
-| Agent → flow end-to-end 호출 | 미확인 | DLP 예외 승인 후 Standard Test 패널에서 실행 |
+| Lab B 최종 Flow checker 재확인 | 재현 불가 | API가 없어 정의 원본과 5건의 성공 실행으로 대체 |
+| GitHub agent → workflow Preview | 미확인 | macOS 잠금 해제 후 두 입력을 Preview에서 실행 |
+| Standard agent → flow end-to-end 호출 | 미확인 | DLP 예외 승인 후 Standard Test 패널에서 실행 |
 | `PvaSkills` 테넌트 DLP 예외 | 대기 | [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)의 요청 템플릿 사용 |
 | `Classify Issue - GitHub Harness (API Reference)` 정리 | 미결정 | Dataverse에서 소유 관계와 참조를 확인한 뒤 정리 |
 

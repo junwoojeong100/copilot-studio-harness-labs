@@ -33,7 +33,7 @@ Harness가 결정하는 것:
 
 ### 1. GitHub Copilot harness
 
-가장 강력한 옵션. 추론 중심의 다단계 비즈니스 프로세스용입니다.
+기능 범위가 가장 넓은 옵션입니다. 추론 중심의 다단계 비즈니스 프로세스에 적합합니다.
 
 - 목표를 받아 단계로 분해하고, 실패하면 대체 경로를 찾아 재시도합니다.
 - connector, knowledge, MCP, connected agent를 가로질러 tool을 호출합니다.
@@ -50,7 +50,9 @@ Harness가 결정하는 것:
 
 규칙 기반 agent와 구조화된 대화용. 예측 가능성이 최우선일 때 선택합니다.
 
-- topic, prompt, 경로를 직접 정의하므로 동일 입력에 동일 응답이 나옵니다.
+- classic orchestration에서는 topic과 경로를 직접 정의해 실행 흐름을 통제합니다.
+- generative orchestration을 켜면 모델이 topic, tool, knowledge를 선택하므로
+  응답이 항상 같다고 볼 수는 없습니다.
 - 기존 prompt 라이브러리와 엔터프라이즈 knowledge를 그대로 활용합니다.
 - classic orchestration(topic만 사용)과 generative orchestration을 모두 지원합니다.
 
@@ -75,8 +77,8 @@ Microsoft 365 Copilot Chat을 조직 knowledge로 확장하는 harness입니다.
 | 고려 항목 | GitHub Copilot harness | Standard harness | Copilot chat harness |
 | --- | --- | --- | --- |
 | 최적 용도 | 복잡한 다단계 비즈니스 프로세스 | 규칙 기반 agent와 구조화된 대화 | 엔터프라이즈 knowledge로 M365 Copilot Chat 확장 |
-| 동작 방식 | 목표를 스스로 단계별로 추론 | 정의한 topic과 규칙을 따름 | knowledge를 M365 Copilot Chat에 연결 |
-| 오류 복구 | 자동 재시도 및 대체 경로 탐색 | 만들어 둔 경로만 따름 | 해당 없음 |
+| 동작 방식 | 목표를 스스로 단계별로 추론 | classic은 정의한 경로, generative는 모델이 경로 선택 | knowledge를 M365 Copilot Chat에 연결 |
+| 오류 복구 | 자동 재시도 및 대체 경로 탐색 | 선택한 orchestration과 작성한 경로에 따름 | 해당 없음 |
 | 파일 처리 | Word/Excel/PowerPoint/PDF 생성·편집·추론 | 해당 없음 | 해당 없음 |
 | Skills / Memory | 지원 | 해당 없음 | 해당 없음 |
 | 게시 대상 | 내부 팀 또는 외부 고객 | 내부 팀 또는 외부 고객 | 내부 팀 |
@@ -124,13 +126,17 @@ Capacity가 모두 소진되면 새 flow 실행이 차단됩니다.
 여러 tool을 순차 호출하며 결과에 따라 판단해야 하는가?  → GitHub Copilot harness
 프로세스를 끝까지 자동화해야 하는가?                   → GitHub Copilot harness
 
-동일 입력에 항상 동일 응답이 나와야 하는가?             → Standard harness
+동일 입력에 같은 경로와 출력 계약이 필요한가?            → Standard + classic orchestration
 시나리오가 명확히 정의된 규칙 기반인가?                 → Standard harness
 비용을 예측 가능하게 통제해야 하는가?                   → Standard harness
 
 목적이 "정보 연결"이고 사용자가 M365 Copilot Chat에 있는가? → Copilot chat harness
 별도 채널을 만들지 않고 사내 직원에게만 도달하면 되는가?     → Copilot chat harness
 ```
+
+> Standard harness 자체가 응답의 결정론성을 보장하는 것은 아닙니다.
+> 재현성이 필요하면 classic orchestration으로 경로를 고정하고,
+> 계산은 deterministic agent flow에 두며, 생성형 prompt 사용을 제한하세요.
 
 ### 혼합 구성
 
