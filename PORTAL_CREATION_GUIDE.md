@@ -548,25 +548,24 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 
 **사전 조건:** Node.js 18 이상과 GitHub Copilot CLI가 설치돼 있어야 합니다.
 
-설치 방법은 크게 두 가지입니다. 둘 중 하나만 선택하세요.
+Playwright MCP는 기본적으로 실제 브라우저 창을 여는 **headed** 모드입니다.
+브라우저 창 없이 실행하는 **headless** 모드는 `--headless` 옵션을 사용합니다.
+실행할 때 모드를 선택하려면 두 서버를 서로 다른 이름으로 등록하세요.
 
-### 방법 1. Copilot CLI 명령으로 추가 (권장)
+### 방법 1. Copilot CLI 명령으로 두 모드 추가 (권장)
 
-대화형 세션에서는 `/mcp add`를 입력하고 다음 값을 설정합니다.
-
-| 필드 | 값 |
-| --- | --- |
-| Server Name | `playwright` |
-| Server Type | `STDIO` |
-| Command | `npx @playwright/mcp@latest` |
-| Tools | `*` |
-
-<kbd>Ctrl</kbd>+<kbd>S</kbd>로 저장합니다. 또는 일반 터미널에서 한 줄로 추가할 수
-있습니다.
+기존 `playwright` 서버가 있으면 제거한 뒤 headed와 headless 서버를 각각 추가합니다.
 
 ```bash
-copilot mcp add playwright -- npx @playwright/mcp@latest
+copilot mcp remove playwright
+copilot mcp add --timeout 60000 playwright -- \
+  npx -y @playwright/mcp@latest
+copilot mcp add --timeout 60000 playwright-headless -- \
+  npx -y @playwright/mcp@latest --headless
 ```
+
+`playwright`는 headed, `playwright-headless`는 headless 서버입니다.
+기존 서버가 없어서 `remove`가 실패하면 두 `add` 명령부터 실행하세요.
 
 ### 방법 2. MCP 설정 JSON을 직접 작성
 
@@ -580,15 +579,38 @@ copilot mcp add playwright -- npx @playwright/mcp@latest
     "playwright": {
       "type": "local",
       "command": "npx",
-      "args": ["@playwright/mcp@latest"],
-      "tools": ["*"]
+      "args": ["-y", "@playwright/mcp@latest"],
+      "tools": ["*"],
+      "timeout": 60000
+    },
+    "playwright-headless": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--headless"],
+      "tools": ["*"],
+      "timeout": 60000
     }
   }
 }
 ```
 
-설치 후 터미널에서는 `copilot mcp list`, Copilot CLI 대화형 세션에서는
-`/mcp show playwright`로 연결 상태와 제공 tool을 확인합니다.
+설치 후 설정을 확인합니다.
+
+```bash
+copilot mcp get playwright
+copilot mcp get playwright-headless
+```
+
+MCP 서버는 Copilot CLI 세션을 시작할 때 로드됩니다. 실행 중에 설정을 바꿨다면
+대화형 세션에서 `/restart`를 실행하세요.
+
+| 실행 목적 | 요청할 서버 | 사용 예 |
+| --- | --- | --- |
+| 실제 브라우저 화면을 보며 진행 | `playwright` | `playwright로 Copilot Studio를 열어줘` |
+| 화면 없이 백그라운드에서 진행 | `playwright-headless` | `playwright-headless로 회귀 테스트해줘` |
+
+headed 창을 보려면 SSH나 백그라운드 셸이 아니라 로그인된 데스크톱의
+Terminal.app에서 Copilot CLI를 실행해야 합니다.
 
 ## C-1. Playwright MCP로 Preview 테스트
 
@@ -601,11 +623,12 @@ copilot mcp add playwright -- npx @playwright/mcp@latest
    copilot
    ```
 
-2. `/mcp`를 입력해 `playwright` MCP 서버가 연결됐는지 확인합니다.
-3. Copilot CLI에 다음처럼 자연어로 테스트를 요청합니다.
+2. `/mcp`를 입력해 `playwright`와 `playwright-headless` 서버가 연결됐는지
+   확인합니다.
+3. 실제 화면을 보려면 headed 서버를 명시해 다음처럼 요청합니다.
 
    ```text
-   Playwright MCP로 Copilot Studio에 접속해서
+   headed playwright 서버로 Copilot Studio에 접속해서
    Simple Issue Triage GitHub agent의 Preview를 열어줘.
    Bug와 Security 사례를 실행하고 Activity trace에서
    Classify Issue - GitHub Harness workflow와 두 입력값을 확인해줘.
@@ -615,6 +638,9 @@ copilot mcp add playwright -- npx @playwright/mcp@latest
    테스트를 진행하도록 둡니다.
 5. FIDO, MFA, 보안 키 화면이 나타나면 사용자가 인증을 완료한 뒤 CLI에 계속
    진행하도록 요청합니다.
+
+화면이 필요 없는 반복 테스트에서는 같은 요청의 첫 줄을
+`playwright-headless 서버로`로 바꿉니다.
 
 Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Preview에 들어가지 못할 수
 있습니다. 이 경우 [`VERIFICATION.md`](VERIFICATION.md)로 저장 정의와 flow 실행
@@ -631,7 +657,7 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 - [ ] Bug와 Security 사례가 두 flow에서 같은 결과를 낸다
 - [ ] A-2 topic이 질문 변수를 flow 입력에 연결하고 Action 출력을 메시지에 삽입한다
 - [ ] B-2 Preview trace에서 workflow와 입력값을 확인했다
-- [ ] C-0에서 Playwright MCP를 설치하고 연결 상태를 확인했다
+- [ ] C-0에서 headed와 headless Playwright MCP를 설치하고 선택 실행을 확인했다
 - [ ] C-1에서 Copilot CLI와 Playwright MCP로 Preview 회귀 테스트를 실행했다
 - [ ] 필요한 리소스를 모두 게시했다
 
@@ -650,6 +676,7 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 | 입력을 바꿔도 출력이 같음 | Response에 상수 입력 | 앞 노드의 `outputs(...)` 연결 |
 | 평가판에서 게시 불가 | 평가판은 게시 미지원 | 정식 라이선스 사용 |
 | Credits가 빠르게 소모됨 | GitHub harness는 빌드·테스트도 과금 | PPAC에서 agent 한도 설정 |
+| Playwright 브라우저 창이 보이지 않음 | headless 서버 선택 또는 비대화형 셸에서 실행 | `playwright` 서버를 선택하고 데스크톱 Terminal.app에서 CLI 재시작 |
 
 ## 관련 문서
 
