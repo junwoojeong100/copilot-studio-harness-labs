@@ -49,6 +49,8 @@ agent가 이를 선택하고 실행하는 harness에 있습니다.
 ## 실습 순서
 
 Flow 또는 workflow를 먼저 게시한 뒤 agent에 tool로 연결합니다.
+이는 **구축·단위 테스트 순서**입니다. 사용자가 완성된 구성을 실행할 때의
+**런타임 순서**는 `사용자 → agent → flow/workflow → agent 응답`입니다.
 
 ```text
 A-1. Standard agent flow 생성 → 테스트 → 게시
@@ -660,6 +662,8 @@ Terminal.app에서 Copilot CLI를 실행해야 합니다. Edge와 Company Portal
    테스트를 진행하도록 둡니다.
 5. FIDO, MFA, 보안 키 화면이 나타나면 사용자가 인증을 완료한 뒤 CLI에 계속
    진행하도록 요청합니다.
+6. Preview trace에서 런타임 순서가 agent → workflow인지 확인하고, workflow의
+   `text`와 `text_1` 입력 및 출력 JSON을 확인합니다.
 
 화면이 필요 없는 반복 테스트에서는 같은 요청의 첫 줄을
 `playwright-headless 서버로`로 바꿉니다.
