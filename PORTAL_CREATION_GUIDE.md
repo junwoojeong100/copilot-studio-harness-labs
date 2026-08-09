@@ -79,7 +79,7 @@ Lab A와 Lab B는 서로 독립적입니다. Lab C는 완성된 Lab A 또는 Lab
 | 게시 가능한 정식 라이선스 | 필수 | 필수 | 평가판은 게시 불가 |
 | `Skills with Copilot Studio` DLP 허용 | A-2 호출에 필수 | B-2 호출에 필수 | PPAC → Data policy |
 | **New experience** 사용 가능 | 해당 없음 | 필수 | 오른쪽 위 토글 |
-| Copilot Credits | 해당 없음 | 빌드·Preview에 필수 | PPAC → Licensing → Copilot Studio |
+| Copilot Credits | 게시 후 사용에 필요 | 빌드·Preview부터 소모 가능 | PPAC → Licensing → Copilot Studio |
 | Agent별 credit 한도 | 해당 없음 | 권장 | Preview 전에 PPAC에서 설정 |
 | Azure CLI 로그인 | 선택 | 선택 | API 검증에만 사용 |
 
@@ -708,7 +708,6 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 
 ## 관련 문서
 
-- 개념: [`COPILOT_STUDIO_CONCEPTS.md`](COPILOT_STUDIO_CONCEPTS.md)
 - Harness 선택: [`HARNESS_COMPARISON.md`](HARNESS_COMPARISON.md)
 - 역할·권한·DLP: [`ROLES_AND_PERMISSIONS.md`](ROLES_AND_PERMISSIONS.md)
 - API 검증: [`VERIFICATION.md`](VERIFICATION.md)

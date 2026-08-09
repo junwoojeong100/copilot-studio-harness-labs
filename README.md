@@ -21,8 +21,7 @@ GitHub Copilot CLI와 Playwright MCP로 검증하는 실습입니다.
 처음 접하는 경우에는 다음 순서로 읽으세요.
 
 ```text
-COPILOT_STUDIO_CONCEPTS.md
-  → HARNESS_COMPARISON.md
+HARNESS_COMPARISON.md
   → PORTAL_CREATION_GUIDE.md
   → VERIFICATION.md
 ```
@@ -56,7 +55,6 @@ Lab C — GitHub Copilot CLI + Playwright MCP
 
 | 문서 | 목적 |
 | --- | --- |
-| [`COPILOT_STUDIO_CONCEPTS.md`](COPILOT_STUDIO_CONCEPTS.md) | Agent, tool, knowledge, orchestration, 채널, 거버넌스 개념 |
 | [`HARNESS_COMPARISON.md`](HARNESS_COMPARISON.md) | Harness 차이, 과금, 선택 기준 |
 | [`PORTAL_CREATION_GUIDE.md`](PORTAL_CREATION_GUIDE.md) | 포털에서 그대로 따라 하는 실습 절차 |
 | [`VERIFICATION.md`](VERIFICATION.md) | 읽기 전용 API 검증 명령 |
@@ -77,4 +75,4 @@ Lab C — GitHub Copilot CLI + Playwright MCP
 - 웹 포털 저작 경로만 다룹니다.
 - 코드, CLI, solution package를 이용한 생성은 포함하지 않습니다.
 - Standard와 GitHub Copilot harness를 실습합니다.
-- Copilot chat harness는 개념과 비교 문서에서만 다룹니다.
+- Copilot chat harness는 비교 문서에서만 다룹니다.

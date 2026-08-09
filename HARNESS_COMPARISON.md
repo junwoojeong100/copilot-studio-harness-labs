@@ -5,6 +5,8 @@ Copilot Studio에서 만드는 모든 것은 **harness** 위에서 실행됩니�
 
 기준 문서: [Choose a harness](https://learn.microsoft.com/microsoft-copilot-studio/harnesses-overview)
 
+사실 확인: 2026-08-09
+
 ## Harness란 무엇인가
 
 Harness는 **런타임**입니다. 아래 두 계층 사이에 위치합니다.
@@ -25,7 +27,7 @@ Harness가 결정하는 것:
 | 실행 방식 | 정의된 규칙·분기를 따를지, 목표를 스스로 단계로 분해할지 |
 | 자동화 범위 | 한 번에 끝낼 수 있는 프로세스의 길이와 복잡도 |
 | 기본 제공 기능 | 파일 생성/편집, skills, memory, tool orchestration 지원 여부 |
-| 과금 방식 | Copilot Credits인지 Copilot Studio capacity인지 |
+| 과금 방식 | GitHub harness 사용량 과금인지 standard harness 라이선스·과금인지 |
 
 즉 harness 선택은 **모델 선택보다 먼저 오는 아키텍처 결정**입니다.
 
@@ -82,7 +84,7 @@ Microsoft 365 Copilot Chat을 조직 knowledge로 확장하는 harness입니다.
 | 파일 처리 | Word/Excel/PowerPoint/PDF 생성·편집·추론 | 해당 없음 | 해당 없음 |
 | Skills / Memory | 지원 | 해당 없음 | 해당 없음 |
 | 게시 대상 | 내부 팀 또는 외부 고객 | 내부 팀 또는 외부 고객 | 내부 팀 |
-| 과금 | Copilot Credits | Copilot Studio 라이선스/capacity | 소비 기반 또는 M365 Copilot USL에 포함 |
+| 과금 | Copilot Credits 기반 사용량 과금 | Standard harness 라이선스·Copilot Credits | 소비 기반 또는 M365 Copilot USL에 포함 |
 
 ## 산출물 매핑
 
@@ -91,9 +93,9 @@ harness마다 부르는 이름과 만드는 위치가 다릅니다. 실습에서
 | 자동화 산출물 | Harness | 포털 진입 경로 | 과금 단위 |
 | --- | --- | --- | --- |
 | **Workflow** | GitHub Copilot | **New experience = On** → 왼쪽 **Workflows** → **New workflow** | Copilot Credits |
-| **Agent flow** | Standard | **Workflows** 페이지 → **New agent flow** (이전 경험에서는 **Flows**) | Copilot Studio capacity (action 단위) |
+| **Agent flow** | Standard | **Workflows** 페이지 → **New agent flow** (이전 경험에서는 **Flows**) | Standard harness 라이선스·Copilot Credits |
 | **Agent** (GitHub) | GitHub Copilot | **New experience = On** → **Agents** → **New agent** | Copilot Credits |
-| **Agent** (Standard) | Standard | **New experience = Off** 또는 Home의 **Other ways to build** | Copilot Studio capacity |
+| **Agent** (Standard) | Standard | **New experience = Off** 또는 Home의 **Other ways to build** | Standard harness 라이선스·Copilot Credits |
 
 > **중요**: workflow와 agent flow는 서로 다른 형식입니다.
 > Power Automate cloud flow는 agent flow로 변환할 수 있지만,
@@ -107,17 +109,18 @@ harness마다 부르는 이름과 만드는 위치가 다릅니다. 실습에서
 
 | 항목 | GitHub Copilot harness | Standard harness |
 | --- | --- | --- |
-| 과금 단위 | Copilot Credits | Copilot Studio capacity (message/session/action) |
+| 과금 방식 | Copilot Credits 기반 사용량 과금 | Standard harness 라이선스와 Copilot Credits 요율 |
 | **과금 시작 시점** | **빌드를 시작하는 순간부터** | **게시(publish) 이후부터** |
 | 과금 대상 | LLM 토큰, tool(knowledge·MCP 포함), harness 자체 | 대화 및 action 실행 |
-| 테스트 과금 | 자연어 생성, 미리 보기, 테스트, 평가 생성 모두 credit 소모 | 디자이너/테스트 채팅 실행은 capacity 미소모 |
+| 테스트 | Preview·테스트·평가도 credit을 사용할 수 있음 | Trial에서도 test chat 가능, 게시 불가 |
 | 사용량 확인 | agent의 **Monitor** 페이지 | PPAC → **Licensing** → **Copilot Studio** |
 
 > GitHub Copilot harness에서는 **만들고 테스트하는 것만으로도 credit이 소모**됩니다.
 > Standard harness의 감각으로 접근하면 예산을 초과하기 쉽습니다.
 
-Capacity가 모두 소진되면 새 flow 실행이 차단됩니다.
-단, 실행 중인 flow는 정상 완료되며 M365 Copilot 라이선스 사용자와 테스트 실행은 영향을 받지 않습니다.
+Standard harness의 정확한 요율과 enforcement는
+[공식 라이선스 문서](https://learn.microsoft.com/microsoft-copilot-studio/billing-licensing)를
+기준으로 확인하세요.
 
 ## 선택 기준
 
