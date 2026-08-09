@@ -527,19 +527,32 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)을
 따라 `Skills with Copilot Studio` 정책을 확인하세요.
 
-### Playwright MCP로 Preview 테스트
+### GitHub Copilot CLI에서 Playwright MCP로 Preview 테스트
 
-1. `browser_navigate`로 <https://copilotstudio.microsoft.com>을 엽니다.
-2. `browser_snapshot`으로 현재 화면과 element ref를 확인합니다.
-3. `browser_type`과 `browser_click`으로 로그인하고 대상 agent의 **Preview**로 이동합니다.
-4. Bug와 Security 사례를 입력한 뒤 `browser_wait`와 `browser_snapshot`으로
-   응답과 Activity trace의 workflow 호출·입력값을 확인합니다.
-5. 화면이 바뀔 때마다 snapshot을 다시 받아 최신 ref를 사용합니다.
+1. 저장소 루트의 터미널에서 GitHub Copilot CLI를 실행합니다.
 
-Playwright 브라우저는 별도 세션이므로 FIDO, MFA, 보안 키 인증은 사용자가 직접
-완료해야 할 수 있습니다. 인증을 완료할 수 없으면 [`VERIFICATION.md`](VERIFICATION.md)로
-저장 정의와 flow 실행 결과를 확인할 수 있지만, 이는 agent Preview end-to-end
-검증을 대체하지 않습니다.
+   ```bash
+   copilot
+   ```
+
+2. `/mcp`를 입력해 `playwright` MCP 서버가 연결됐는지 확인합니다.
+3. Copilot CLI에 다음처럼 자연어로 테스트를 요청합니다.
+
+   ```text
+   Playwright MCP로 Copilot Studio에 접속해서
+   Simple Issue Triage GitHub agent의 Preview를 열어줘.
+   Bug와 Security 사례를 실행하고 Activity trace에서
+   Classify Issue - GitHub Harness workflow와 두 입력값을 확인해줘.
+   ```
+
+4. Copilot CLI가 Playwright의 탐색, snapshot, 입력, 클릭, 대기 tool을 사용해
+   테스트를 진행하도록 둡니다.
+5. FIDO, MFA, 보안 키 화면이 나타나면 사용자가 인증을 완료한 뒤 CLI에 계속
+   진행하도록 요청합니다.
+
+Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Preview에 들어가지 못할 수
+있습니다. 이 경우 [`VERIFICATION.md`](VERIFICATION.md)로 저장 정의와 flow 실행
+결과를 확인할 수 있지만, 이는 agent Preview end-to-end 검증을 대체하지 않습니다.
 
 ---
 
