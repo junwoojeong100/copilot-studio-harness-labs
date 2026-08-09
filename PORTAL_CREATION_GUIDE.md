@@ -1,10 +1,12 @@
 # Copilot Studio 포털 실습 가이드
 
 Copilot Studio 웹 포털에서 동일한 GitHub 이슈 분류기를 두 harness로 구현합니다.
-코드, CLI, solution package는 사용하지 않습니다.
+Lab A와 Lab B의 생성에는 코드, CLI, solution package를 사용하지 않습니다.
+Lab C에서만 검증 도구로 GitHub Copilot CLI를 사용합니다.
 
 - **Lab A**: Standard harness agent + agent flow
 - **Lab B**: GitHub Copilot harness agent + workflow
+- **Lab C**: GitHub Copilot CLI + Playwright MCP 검증
 
 이 문서에는 따라 만들 값만 나옵니다. 특정 테넌트의 리소스 ID, 실행 기록, 과거 결함은
 [`ACCOUNT_PERMISSION_INVENTORY.md`](ACCOUNT_PERMISSION_INVENTORY.md)에서 확인하세요.
@@ -17,6 +19,7 @@ Copilot Studio 웹 포털에서 동일한 GitHub 이슈 분류기를 두 harness
 | A-2 | Standard | Agent | `Simple Issue Triage Standard` |
 | B-1 | GitHub Copilot | Workflow | `Classify Issue - GitHub Harness` |
 | B-2 | GitHub Copilot | Agent | `Simple Issue Triage GitHub` |
+| C-1 | GitHub Copilot CLI | Preview 검증 | Lab A/B agent |
 
 > Agent 이름은 30자를 넘기지 마세요. 초과분은 경고 없이 잘릴 수 있습니다.
 
@@ -30,6 +33,7 @@ agent가 이를 선택하고 실행하는 harness에 있습니다.
 | Standard harness만 만들기 | [A-1](#a-1-agent-flow-만들기) | Agent가 질문 두 개를 받고 출력 네 개를 반환 |
 | GitHub Copilot harness만 만들기 | [B-1](#b-1-workflow-만들기) | Preview trace에서 workflow 호출과 출력 확인 |
 | 두 harness 비교 | A-1부터 순서대로 | 같은 입력에서 두 Lab의 출력이 일치 |
+| Playwright MCP로 회귀 테스트 | [C-1](#c-1-playwright-mcp로-preview-테스트) | Copilot CLI가 Preview와 Activity trace를 확인 |
 
 ## 공통 완료 계약
 
@@ -53,9 +57,12 @@ A-2. Standard agent 생성 → topic에서 flow 호출 → 테스트 → 게시
 B-1. GitHub workflow 생성 → 테스트 → 게시
         ↓
 B-2. GitHub agent 생성 → workflow 연결 → Preview → 게시
+
+C-1. GitHub Copilot CLI → Playwright MCP 연결 → Preview 회귀 테스트
 ```
 
-Lab A와 Lab B는 서로 독립적입니다.
+Lab A와 Lab B는 서로 독립적입니다. Lab C는 완성된 Lab A 또는 Lab B를 검증하는
+선택 실습입니다.
 
 ## 사전 준비 체크리스트
 
@@ -70,6 +77,9 @@ Lab A와 Lab B는 서로 독립적입니다.
 | Copilot Credits | 해당 없음 | 빌드·Preview에 필수 | PPAC → Licensing → Copilot Studio |
 | Agent별 credit 한도 | 해당 없음 | 권장 | Preview 전에 PPAC에서 설정 |
 | Azure CLI 로그인 | 선택 | 선택 | API 검증에만 사용 |
+
+Lab C를 진행하려면 GitHub Copilot CLI에 로그인하고 `/mcp`에서 `playwright` 서버가
+연결된 상태여야 합니다.
 
 권한과 DLP 상세는 [`ROLES_AND_PERMISSIONS.md`](ROLES_AND_PERMISSIONS.md)를 참고하세요.
 
@@ -527,7 +537,14 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)을
 따라 `Skills with Copilot Studio` 정책을 확인하세요.
 
-### GitHub Copilot CLI에서 Playwright MCP로 Preview 테스트
+---
+
+# Lab C. GitHub Copilot CLI + Playwright MCP 검증
+
+## C-1. Playwright MCP로 Preview 테스트
+
+**완료 기준:** Copilot CLI가 대상 agent의 Preview를 열고, Bug와 Security 사례의
+응답 및 Activity trace를 확인합니다.
 
 1. 저장소 루트의 터미널에서 GitHub Copilot CLI를 실행합니다.
 
@@ -565,6 +582,7 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 - [ ] Bug와 Security 사례가 두 flow에서 같은 결과를 낸다
 - [ ] A-2 topic이 질문 변수를 flow 입력에 연결하고 Action 출력을 메시지에 삽입한다
 - [ ] B-2 Preview trace에서 workflow와 입력값을 확인했다
+- [ ] C-1에서 Copilot CLI와 Playwright MCP로 Preview 회귀 테스트를 실행했다
 - [ ] 필요한 리소스를 모두 게시했다
 
 완료 후 [`VERIFICATION.md`](VERIFICATION.md)로 저장 정의와 실행 이력을 확인하세요.

@@ -1,7 +1,8 @@
 # Copilot Studio Harness Lab
 
 Microsoft Copilot Studio에서 같은 GitHub 이슈 분류기를
-**Standard harness**와 **GitHub Copilot harness**로 각각 만드는 포털 실습입니다.
+**Standard harness**와 **GitHub Copilot harness**로 각각 만들고,
+GitHub Copilot CLI와 Playwright MCP로 검증하는 실습입니다.
 
 ## 빠른 시작
 
@@ -15,6 +16,7 @@ Microsoft Copilot Studio에서 같은 GitHub 이슈 분류기를
 | Standard harness만 실습 | [`A-1. Agent flow 만들기`](PORTAL_CREATION_GUIDE.md#a-1-agent-flow-만들기) |
 | GitHub Copilot harness만 실습 | [`B-1. Workflow 만들기`](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기) |
 | 두 harness 비교 | A-1 → A-2 → B-1 → B-2 |
+| Playwright MCP로 검증 | [`C-1. Playwright MCP로 Preview 테스트`](PORTAL_CREATION_GUIDE.md#c-1-playwright-mcp로-preview-테스트) |
 
 처음 접하는 경우에는 다음 순서로 읽으세요.
 
@@ -27,7 +29,7 @@ COPILOT_STUDIO_CONCEPTS.md
 
 ## 실습 결과
 
-두 Lab은 같은 입력과 분류 규칙을 사용하며 출력 계약도 같습니다.
+Lab A와 Lab B는 같은 입력과 분류 규칙을 사용하며 출력 계약도 같습니다.
 
 | 계약 | 필드 |
 | --- | --- |
@@ -42,6 +44,9 @@ Lab A — Standard harness
 Lab B — GitHub Copilot harness
   Workflow:   Classify Issue - GitHub Harness
   Agent:      Simple Issue Triage GitHub
+
+Lab C — GitHub Copilot CLI + Playwright MCP
+  Verify:     Lab A/B agent Preview and Activity trace
 ```
 
 > Flow 또는 workflow를 먼저 게시해야 agent의 tool 목록에 나타납니다.
