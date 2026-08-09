@@ -527,6 +527,20 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)을
 따라 `Skills with Copilot Studio` 정책을 확인하세요.
 
+### Playwright MCP로 Preview 테스트
+
+1. `browser_navigate`로 <https://copilotstudio.microsoft.com>을 엽니다.
+2. `browser_snapshot`으로 현재 화면과 element ref를 확인합니다.
+3. `browser_type`과 `browser_click`으로 로그인하고 대상 agent의 **Preview**로 이동합니다.
+4. Bug와 Security 사례를 입력한 뒤 `browser_wait`와 `browser_snapshot`으로
+   응답과 Activity trace의 workflow 호출·입력값을 확인합니다.
+5. 화면이 바뀔 때마다 snapshot을 다시 받아 최신 ref를 사용합니다.
+
+Playwright 브라우저는 별도 세션이므로 FIDO, MFA, 보안 키 인증은 사용자가 직접
+완료해야 할 수 있습니다. 인증을 완료할 수 없으면 [`VERIFICATION.md`](VERIFICATION.md)로
+저장 정의와 flow 실행 결과를 확인할 수 있지만, 이는 agent Preview end-to-end
+검증을 대체하지 않습니다.
+
 ---
 
 ## 완료 체크리스트

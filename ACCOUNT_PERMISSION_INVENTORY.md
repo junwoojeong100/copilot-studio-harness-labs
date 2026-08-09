@@ -94,6 +94,7 @@ Type: Developer
 - 실제 flow ID: `392d1a43-33d8-247c-fb53-b45dd60eb31c`
 - 직접 실행: 123 ms, Succeeded
 - Run ID: `08584156703223952675185929598CU03`
+- 2026-08-09에 출력 계약을 4개로 확장하고 Bug/Security 사례 재실행 완료
 
 ## 계정에 있는 것
 
@@ -195,7 +196,7 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 
 | Name | Workflow ID | 상태 |
 | --- | --- | --- |
-| `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published ✅ · direct run 123 ms Succeeded ✅ |
+| `Classify Issue - Standard` | `392d1a43-33d8-247c-fb53-b45dd60eb31c` | Published ✅ · 5분류/P0~P3 직접 실행 검증 ✅ · required tests 2/2 PASS ✅ |
 | `Classify Issue - GitHub Harness` | `a6666167-9cca-6bb0-ad80-8490bb022981` | Published ✅ · 5분류/P0~P3 동적 출력 ✅ · required tests 3/3 PASS ✅ |
 | `Classify Issue - GitHub Harness (API Reference)` | `48ed52fb-bc90-f111-b8da-000d3a329d3b` | Activated. **포털 목록에는 미표시** |
 
@@ -203,6 +204,10 @@ Microsoft 365 Copilot license의 정확한 SKU도 Graph token protection 때문�
 
 ```text
 Standard  : Run ID 08584156703223952675185929598CU03 · 123 ms · Succeeded
+Standard bug: Run ID 08584153617269814249280112903CU08 · Succeeded
+              bug / P2 / Classified as bug with priority P2. / false
+Standard sec: Run ID 08584153617260037098913224510CU26 · Succeeded
+              security / P1 / Classified as security with priority P1. / true
 GitHub bug: Run ID 08584155756901025273018959107CU23 · 197 ms · Succeeded
             bug / P2 / Classified as bug with priority P2. / false
 GitHub sec: Run ID 08584155756752622167908104751CU21 · 281 ms · Succeeded
@@ -218,6 +223,9 @@ GitHub workflow의 Response는 앞 노드의 계산 결과와 연결돼 있습�
 ### Agent → tool 연결
 
 `Simple Issue Triage Standard`의 Tools에 `Classify Issue - Standard` 연결을 완료했습니다.
+2026-08-09에 tool 출력도 `text`, `text_1`, `text_2`, `boolean` 네 개로
+동기화했습니다. 각 출력의 표시 이름은 flow Response의 `title`인
+`category`, `priority`, `summary`, `needsHumanReview`입니다.
 
 `Simple Issue Triage GitHub Har`의 workflow tool도 수정했습니다.
 
@@ -234,6 +242,67 @@ GitHub workflow의 Response는 앞 노드의 계산 결과와 연결돼 있습�
 > Dataverse `System Administrator` 역할만으로는 tenant DLP를 변경할 수 없습니다.
 > 해제 절차: [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)
 
+## 추가 검증 (2026-08-09)
+
+Playwright MCP 연결과 브라우저 조작은 정상입니다. Copilot Studio 로그인 화면까지
+이동하고 계정 입력도 성공했지만, 별도 브라우저 세션의 FIDO 보안 인증에서 멈춰
+GitHub agent Preview 대화는 완료하지 못했습니다.
+
+브라우저 외 경로에서는 다음을 다시 확인했습니다.
+
+- GitHub agentic runtime의 `/copilotstudio/agenticruntime/3p/.../conversations`
+  엔드포인트가 존재하고 Published agent를 인식함
+- 현재 Azure CLI 앱 토큰은 `CopilotStudio.Copilots.Invoke`와
+  `All.All.ReadWrite` 위임 권한이 없어 runtime 호출이 HTTP 403으로 차단됨
+- 자동 평가 API도 현재 앱에 `CopilotStudio.MakerOperations.Read`와
+  `All.All.ReadWrite`가 없어 HTTP 403으로 차단됨
+- GitHub workflow 저장 정의의 입력 2개, 출력 4개, 식, Boolean 형식이 유효함
+- 기존 Bug와 Security 성공 실행의 실제 trigger body와 Response body가 가이드의
+  기대 결과와 일치함
+- Standard flow에 `Priority` 노드와 누락된 출력 3개를 추가하고, 실제 trigger
+  URI로 Bug, Security, Documentation, Feature, Question, P0 사례를 실행해
+  출력 4개와 JSON Boolean을 확인함
+- 두 agent 모두 의도한 flow/workflow tool component를 저장하고 있음
+
+Power Automate 관리 API의 `/triggers/manual/run`으로 만든 다음 세 smoke run은
+엔진 실행 자체는 `Succeeded`였지만 Skills trigger 입력을 주입하지 못해
+`question / P3`로 계산됐고 `Respond_to_the_agent`가 `Skipped`였습니다.
+따라서 기능 성공 증거로 사용하지 않습니다.
+
+```text
+08584153628145226869506298288CU21
+08584153627604946582465518805CU18
+08584153627396252548042872152CU02
+```
+
+적용 중인 DLP 정책 `Personal Developer - (default)`은
+2026-08-08에 다시 수정됐으며 기본 분류가 `Blocked`입니다.
+`PvaSkills`(`Skills with Copilot Studio`)도 현재 `Blocked` 그룹에 있음을
+정책 API로 재확인했습니다.
+
+### 전체 재검증 (2026-08-09 12:17 KST)
+
+수정 후 두 flow를 같은 여섯 사례로 다시 실행했습니다.
+
+| 사례 | Standard | GitHub |
+| --- | --- | --- |
+| Bug | `bug / P2 / false` ✅ | `bug / P2 / false` ✅ |
+| Security | `security / P1 / true` ✅ | `security / P1 / true` ✅ |
+| Documentation | `documentation / P3 / false` ✅ | `documentation / P3 / false` ✅ |
+| Feature | `feature / P2 / false` ✅ | `feature / P2 / false` ✅ |
+| Question | `question / P3 / false` ✅ | `question / P3 / false` ✅ |
+| Outage / data loss | `question / P0 / false` ✅ | `question / P0 / false` ✅ |
+
+각 flow의 최신 실행 6건은 모두 `Succeeded`입니다. 두 agent의 tool이 올바른
+flow/workflow ID와 출력 네 개를 참조하는 것도 재확인했습니다.
+
+Playwright MCP의 탐색, 입력, 클릭, snapshot은 다시 정상 동작했습니다.
+다만 별도 브라우저 세션은 `junwoojeong@microsoft.com`의 FIDO 보안 창에서
+대기하므로 agent Preview는 완료할 수 없습니다. GitHub agentic runtime 직접
+호출도 현재 Azure CLI 앱에 `CopilotStudio.Copilots.Invoke`와
+`All.All.ReadWrite`가 없어 HTTP 403입니다. Standard agent publish는
+`PvaSkills` DLP 차단이 계속 적용됩니다.
+
 ## 현재 실습 가능 범위
 
 **4종 생성 완료, 3종 Published, 1종 Draft**입니다.
@@ -249,17 +318,15 @@ Draft 리소스는 `Simple Issue Triage Standard`이며 tenant DLP 예외가 필
 | GitHub workflow publish/run | Published, 5분류 required tests 3/3 PASS |
 | GitHub agent workflow tool | 올바른 B-1 workflow와 출력 4개 연결, 재게시 완료 |
 | Standard agent publish | Tool 연결 완료, tenant DLP로 차단 |
-| Standard agent flow publish/run | Published, direct run PASS (123 ms) |
-| 웹 Test/Preview | B-1 Test PASS. B-2 Preview는 세션 잠금으로 미확인 |
+| Standard agent flow publish/run | Published, 출력 4개, 5분류/P0~P3 검증, required tests 2/2 PASS |
+| 웹 Test/Preview | B-1 Test PASS. B-2 Preview는 Playwright 세션의 FIDO 인증으로 미확인 |
 
 ## 남은 작업
 
 | 항목 | 상태 | 해결 방법 |
 | --- | --- | --- |
-| Standard Response 출력 3개 추가 | 미해결 | `priority`, `summary`, `needsHumanReview` 추가 |
-| Standard `Priority` 노드 추가 | 미해결 | 가이드 A-1의 Priority 식 사용 |
 | Lab B 최종 Flow checker 재확인 | 재현 불가 | API가 없어 정의 원본과 5건의 성공 실행으로 대체 |
-| GitHub agent → workflow Preview | 미확인 | macOS 잠금 해제 후 두 입력을 Preview에서 실행 |
+| GitHub agent → workflow Preview | 미확인 | FIDO 로그인을 완료해 Preview하거나, Invoke 권한이 있는 public client 앱으로 agentic runtime 호출 |
 | Standard agent → flow end-to-end 호출 | 미확인 | DLP 예외 승인 후 Standard Test 패널에서 실행 |
 | `PvaSkills` 테넌트 DLP 예외 | 대기 | [`ROLES_AND_PERMISSIONS.md` 6장](ROLES_AND_PERMISSIONS.md#6-dlp-심화-차단된-connector-해제)의 요청 템플릿 사용 |
 | `Classify Issue - GitHub Harness (API Reference)` 정리 | 미결정 | Dataverse에서 소유 관계와 참조를 확인한 뒤 정리 |
