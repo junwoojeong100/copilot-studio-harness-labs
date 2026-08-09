@@ -551,6 +551,8 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 Playwright MCP는 기본적으로 실제 브라우저 창을 여는 **headed** 모드입니다.
 브라우저 창 없이 실행하는 **headless** 모드는 `--headless` 옵션을 사용합니다.
 실행할 때 모드를 선택하려면 두 서버를 서로 다른 이름으로 등록하세요.
+이 가이드는 Microsoft 계정의 디바이스 인증과 Company Portal 연동을 위해
+브라우저를 Microsoft Edge(`msedge`)로 고정합니다.
 
 ### 방법 1. Copilot CLI 명령으로 두 모드 추가 (권장)
 
@@ -558,14 +560,19 @@ Playwright MCP는 기본적으로 실제 브라우저 창을 여는 **headed** �
 
 ```bash
 copilot mcp remove playwright
+copilot mcp remove playwright-headless
 copilot mcp add --timeout 60000 playwright -- \
-  npx -y @playwright/mcp@latest
+  npx -y --registry=https://registry.npmjs.org \
+  @playwright/mcp@latest --browser msedge
 copilot mcp add --timeout 60000 playwright-headless -- \
-  npx -y @playwright/mcp@latest --headless
+  npx -y --registry=https://registry.npmjs.org \
+  @playwright/mcp@latest --browser msedge --headless
 ```
 
 `playwright`는 headed, `playwright-headless`는 headless 서버입니다.
-기존 서버가 없어서 `remove`가 실패하면 두 `add` 명령부터 실행하세요.
+기존 서버가 없어서 `remove`가 실패하면 두 `add` 명령부터 실행하세요. 사내 npm
+레지스트리의 `latest`가 오래된 버전을 가리키면 `--browser msedge`를 지원하지 않을
+수 있으므로 위 명령은 공식 npm 레지스트리를 명시합니다.
 
 ### 방법 2. MCP 설정 JSON을 직접 작성
 
@@ -579,14 +586,27 @@ copilot mcp add --timeout 60000 playwright-headless -- \
     "playwright": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"],
+      "args": [
+        "-y",
+        "--registry=https://registry.npmjs.org",
+        "@playwright/mcp@latest",
+        "--browser",
+        "msedge"
+      ],
       "tools": ["*"],
       "timeout": 60000
     },
     "playwright-headless": {
       "type": "local",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--headless"],
+      "args": [
+        "-y",
+        "--registry=https://registry.npmjs.org",
+        "@playwright/mcp@latest",
+        "--browser",
+        "msedge",
+        "--headless"
+      ],
       "tools": ["*"],
       "timeout": 60000
     }
@@ -610,7 +630,9 @@ MCP 서버는 Copilot CLI 세션을 시작할 때 로드됩니다. 실행 중에
 | 화면 없이 백그라운드에서 진행 | `playwright-headless` | `playwright-headless로 회귀 테스트해줘` |
 
 headed 창을 보려면 SSH나 백그라운드 셸이 아니라 로그인된 데스크톱의
-Terminal.app에서 Copilot CLI를 실행해야 합니다.
+Terminal.app에서 Copilot CLI를 실행해야 합니다. Edge와 Company Portal은 최신
+상태로 유지하고, 조직에서 디바이스 등록을 요구하면 Company Portal에서 등록과
+규정 준수 확인까지 완료하세요.
 
 ## C-1. Playwright MCP로 Preview 테스트
 
@@ -677,6 +699,8 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 | 평가판에서 게시 불가 | 평가판은 게시 미지원 | 정식 라이선스 사용 |
 | Credits가 빠르게 소모됨 | GitHub harness는 빌드·테스트도 과금 | PPAC에서 agent 한도 설정 |
 | Playwright 브라우저 창이 보이지 않음 | headless 서버 선택 또는 비대화형 셸에서 실행 | `playwright` 서버를 선택하고 데스크톱 Terminal.app에서 CLI 재시작 |
+| `--browser msedge`가 인식되지 않음 | 사내 npm 레지스트리의 오래된 MCP 버전 | 공식 npm 레지스트리를 명시한 C-0 명령으로 서버 재등록 |
+| Edge에서 `Enroll your device`로 이동 | Company Portal 로그인만 했거나 디바이스 규정 준수 정보가 반영되지 않음 | Company Portal에서 등록·규정 준수를 완료하고 Edge와 Copilot CLI 재시작 |
 
 ## 관련 문서
 
