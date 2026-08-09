@@ -16,7 +16,7 @@ GitHub Copilot CLI와 Playwright MCP로 검증하는 실습입니다.
 | Standard harness만 실습 | [`A-1. Agent flow 만들기`](PORTAL_CREATION_GUIDE.md#a-1-agent-flow-만들기) |
 | GitHub Copilot harness만 실습 | [`B-1. Workflow 만들기`](PORTAL_CREATION_GUIDE.md#b-1-workflow-만들기) |
 | 두 harness 비교 | A-1 → A-2 → B-1 → B-2 |
-| Playwright MCP로 검증 | [`C-1. Playwright MCP로 Preview 테스트`](PORTAL_CREATION_GUIDE.md#c-1-playwright-mcp로-preview-테스트) |
+| Playwright MCP 설치·검증 | [`C-0. Playwright MCP 설치`](PORTAL_CREATION_GUIDE.md#c-0-playwright-mcp-설치) |
 
 처음 접하는 경우에는 다음 순서로 읽으세요.
 

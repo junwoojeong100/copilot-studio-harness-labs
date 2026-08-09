@@ -19,6 +19,7 @@ Lab C에서만 검증 도구로 GitHub Copilot CLI를 사용합니다.
 | A-2 | Standard | Agent | `Simple Issue Triage Standard` |
 | B-1 | GitHub Copilot | Workflow | `Classify Issue - GitHub Harness` |
 | B-2 | GitHub Copilot | Agent | `Simple Issue Triage GitHub` |
+| C-0 | GitHub Copilot CLI | MCP server | `playwright` |
 | C-1 | GitHub Copilot CLI | Preview 검증 | Lab A/B agent |
 
 > Agent 이름은 30자를 넘기지 마세요. 초과분은 경고 없이 잘릴 수 있습니다.
@@ -33,7 +34,7 @@ agent가 이를 선택하고 실행하는 harness에 있습니다.
 | Standard harness만 만들기 | [A-1](#a-1-agent-flow-만들기) | Agent가 질문 두 개를 받고 출력 네 개를 반환 |
 | GitHub Copilot harness만 만들기 | [B-1](#b-1-workflow-만들기) | Preview trace에서 workflow 호출과 출력 확인 |
 | 두 harness 비교 | A-1부터 순서대로 | 같은 입력에서 두 Lab의 출력이 일치 |
-| Playwright MCP로 회귀 테스트 | [C-1](#c-1-playwright-mcp로-preview-테스트) | Copilot CLI가 Preview와 Activity trace를 확인 |
+| Playwright MCP 설치·회귀 테스트 | [C-0](#c-0-playwright-mcp-설치) | Copilot CLI가 Preview와 Activity trace를 확인 |
 
 ## 공통 완료 계약
 
@@ -58,6 +59,8 @@ B-1. GitHub workflow 생성 → 테스트 → 게시
         ↓
 B-2. GitHub agent 생성 → workflow 연결 → Preview → 게시
 
+C-0. Playwright MCP 설치
+        ↓
 C-1. GitHub Copilot CLI → Playwright MCP 연결 → Preview 회귀 테스트
 ```
 
@@ -541,6 +544,52 @@ Workflow 호출이 `DlpViolationError / BlockedConnector`로 실패하면
 
 # Lab C. GitHub Copilot CLI + Playwright MCP 검증
 
+## C-0. Playwright MCP 설치
+
+**사전 조건:** Node.js 18 이상과 GitHub Copilot CLI가 설치돼 있어야 합니다.
+
+설치 방법은 크게 두 가지입니다. 둘 중 하나만 선택하세요.
+
+### 방법 1. Copilot CLI 명령으로 추가 (권장)
+
+대화형 세션에서는 `/mcp add`를 입력하고 다음 값을 설정합니다.
+
+| 필드 | 값 |
+| --- | --- |
+| Server Name | `playwright` |
+| Server Type | `STDIO` |
+| Command | `npx @playwright/mcp@latest` |
+| Tools | `*` |
+
+<kbd>Ctrl</kbd>+<kbd>S</kbd>로 저장합니다. 또는 일반 터미널에서 한 줄로 추가할 수
+있습니다.
+
+```bash
+copilot mcp add playwright -- npx @playwright/mcp@latest
+```
+
+### 방법 2. MCP 설정 JSON을 직접 작성
+
+사용자 전체에 적용하려면 `~/.copilot/mcp-config.json`을 편집합니다. 저장소에서만
+사용하거나 팀과 공유하려면 저장소 루트의 `.mcp.json` 또는 `.github/mcp.json`에
+같은 설정을 추가합니다.
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+설치 후 터미널에서는 `copilot mcp list`, Copilot CLI 대화형 세션에서는
+`/mcp show playwright`로 연결 상태와 제공 tool을 확인합니다.
+
 ## C-1. Playwright MCP로 Preview 테스트
 
 **완료 기준:** Copilot CLI가 대상 agent의 Preview를 열고, Bug와 Security 사례의
@@ -582,6 +631,7 @@ Playwright 브라우저는 별도 세션이므로 대화형 인증 없이 Previe
 - [ ] Bug와 Security 사례가 두 flow에서 같은 결과를 낸다
 - [ ] A-2 topic이 질문 변수를 flow 입력에 연결하고 Action 출력을 메시지에 삽입한다
 - [ ] B-2 Preview trace에서 workflow와 입력값을 확인했다
+- [ ] C-0에서 Playwright MCP를 설치하고 연결 상태를 확인했다
 - [ ] C-1에서 Copilot CLI와 Playwright MCP로 Preview 회귀 테스트를 실행했다
 - [ ] 필요한 리소스를 모두 게시했다
 
